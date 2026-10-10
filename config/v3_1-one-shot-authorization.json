@@ -1,0 +1,7 @@
+{
+  "protocol_id": "v3.1-2026-10-11-single-shot",
+  "launch": "ONE_SHOT_CALIBRATION_THEN_CONDITIONAL_MAIN",
+  "maximum_paid_calibration_requests": 864,
+  "maximum_paid_main_requests": 5040,
+  "do_not_rerun_on_failure": true
+}
