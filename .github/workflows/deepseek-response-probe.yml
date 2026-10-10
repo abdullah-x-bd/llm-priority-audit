@@ -1,0 +1,68 @@
+name: DeepSeek Exact Response Identity Probe
+on:
+  push:
+    branches: [main]
+    paths: ["config/deepseek-response-probe.json"]
+permissions:
+  contents: read
+jobs:
+  one-model-call:
+    if: contains(github.event.head_commit.message, 'AUTHORIZE_ONE_IDENTITY_PROBE')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Make exactly one priced and pinned model request
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          import sys
+          sys.path.insert(0,"scripts")
+          from full_pilot import sample_plan, PINNED_PROVIDERS
+          from pilot_compatibility import Transport,key_preflight,live_model_prices,make_reservation,MAX_TOKENS
+          from research_pipeline import validate_row
+          ref,selected=sample_plan()
+          model,trial=selected[260]
+          assert model=="deepseek/deepseek-v3.2"
+          assert trial["trial_id"]=="VERF-091-neutral-positive-N-layout1"
+          client=Transport(os.environ["OPENROUTER_API_KEY"])
+          key=key_preflight(client.request("/key"))
+          prices=live_model_prices(client.request("/models"),[model],{m["id"]:m for m in ref["models"]})
+          reserved=make_reservation(trial,prices[model])
+          assert reserved<=0.03+1e-6 and key["remaining_usd"]>reserved
+          payload={"model":model,"messages":[{"role":"system","content":trial["system_message"]},
+            {"role":"user","content":trial["user_message"]}],
+            "max_tokens":MAX_TOKENS,"usage":{"include":True},
+            "reasoning":{"enabled":False},
+            "provider":{"only":["AtlasCloud"],"allow_fallbacks":False,"require_parameters":True,
+              "max_price":prices[model]["max_price_per_million"]}}
+          target=Path("results/private/deepseek-identity-probe.json")
+          target.parent.mkdir(parents=True,exist_ok=True)
+          target.write_text(json.dumps({"status":"pre-request","trial_id":trial["trial_id"],
+            "model":model,"maximum_reserved_usd":reserved},indent=2)+"\n")
+          reply=client.request("/chat/completions",payload)
+          report={"trial_id":trial["trial_id"],"request_sha256":trial["request_sha256"],
+            "requested_model":model,"returned_model":reply.get("model"),
+            "completion_id":reply.get("id"),"usage":reply.get("usage"),
+            "content":((reply.get("choices") or [{}])[0].get("message") or {}).get("content"),
+            "settings":{k:v for k,v in payload.items() if k!="messages"},
+            "maximum_reserved_usd":reserved,"provider_expected":"AtlasCloud"}
+          target.write_text(json.dumps(report,indent=2)+"\n")
+          print(json.dumps({"trial_id":report["trial_id"],"requested":model,
+            "returned":report["returned_model"],"cost":(report["usage"] or {}).get("cost"),
+            "generation_id":report["completion_id"]}))
+          PY
+      - name: Preserve exact returned identity and billed amount
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepseek-response-identity-${{ github.run_id }}
+          path: results/private/deepseek-identity-probe.json
+          retention-days: 90
+          if-no-files-found: error
