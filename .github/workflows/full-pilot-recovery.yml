@@ -1,10 +1,10 @@
-name: Recover Full Factorial Pilot after HTTP400
+name: Recover Pilot with Verified Provider Pins
 
 on:
   push:
     branches: [main]
     paths:
-      - "config/full-pilot-recovery.json"
+      - "config/full-pilot-provider-fix.json"
 
 permissions:
   contents: read
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   resume-validated-http400:
-    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'AUTHORIZE_FULL_PILOT_HTTP400_RECOVERY')
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'AUTHORIZE_FULL_PILOT_PROVIDER_PIN_RECOVERY')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -34,14 +34,14 @@ jobs:
           req=urllib.request.Request(url,headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],"Accept":"application/vnd.github+json"})
           with urllib.request.urlopen(req,timeout=20) as response:
               items=json.load(response)["artifacts"]
-          if any(x["name"].startswith("full-pilot-recovery-") and not x.get("expired") for x in items):
+          if any(x["name"].startswith("full-pilot-provider-fixed-") and not x.get("expired") for x in items):
               raise SystemExit("STOP: a prior recovery archive exists. Never issue a second unsupervised run.")
           PY
       - name: Retrieve rejected-request ledger from original full pilot
         uses: actions/download-artifact@v4
         with:
-          name: full-pilot-ledger-38044782454
-          run-id: 38044782454
+          name: full-pilot-recovery-38045137979
+          run-id: 38045137979
           github-token: ${{ github.token }}
           path: results/private/
       - name: Verify checkpoint and cause of previous stop
@@ -51,7 +51,7 @@ jobs:
           from pathlib import Path
           p=Path("results/private/full-pilot-live-checkpoint.json")
           x=json.loads(p.read_text())
-          assert x["status"]=="STOP_UNCERTAIN_CHARGE_HTTP_400"
+          assert x["status"].startswith("STOP_UNCERTAIN_CHARGE_HTTP_400")\n          assert len(x.get("rejected_attempts",[]))==1
           assert x["cost_usd"]==0
           assert x["inflight"]["index"]==0
           assert x["inflight"]["trial_id"]=="REVR-091-neutral-zero-N-layout0"
