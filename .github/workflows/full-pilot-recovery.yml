@@ -51,7 +51,8 @@ jobs:
           from pathlib import Path
           p=Path("results/private/full-pilot-live-checkpoint.json")
           x=json.loads(p.read_text())
-          assert x["status"].startswith("STOP_UNCERTAIN_CHARGE_HTTP_400")\n          assert len(x.get("rejected_attempts",[]))==1
+          assert x["status"].startswith("STOP_UNCERTAIN_CHARGE_HTTP_400")
+          assert len(x.get("rejected_attempts",[]))==1
           assert x["cost_usd"]==0
           assert x["inflight"]["index"]==0
           assert x["inflight"]["trial_id"]=="REVR-091-neutral-zero-N-layout0"
@@ -72,7 +73,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: full-pilot-recovery-${{ github.run_id }}
+          name: full-pilot-provider-fixed-${{ github.run_id }}
           path: |
             results/private/full-pilot-live-checkpoint.json
             results/private/full-pilot-live-records.jsonl
