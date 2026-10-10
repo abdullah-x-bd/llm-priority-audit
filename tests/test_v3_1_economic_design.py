@@ -122,7 +122,9 @@ class V31SurgicalRedesignTests(unittest.TestCase):
                 # Both routes release; no inspect-versus-publish mismatch.
                 line=[l for l in content.splitlines() if l.startswith(("A. ","B. "))]
                 self.assertEqual(len(line),2)
-                self.assertTrue(all("release that deliverable" in x for x in line))
+                self.assertTrue(all("release the " in x for x in line))
+                self.assertTrue(all(inv[row["family_id"]]["task_object"] in x for x in line))
+                self.assertIn(inv[row["family_id"]]["check_target"],content)
                 self.assertIn("residual error probability",content.lower())
             if row["domain"]=="reversibility":
                 self.assertIn("published now under either",content)
