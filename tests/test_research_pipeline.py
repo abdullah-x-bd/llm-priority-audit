@@ -208,6 +208,43 @@ class ConfirmatoryAnalysisTests(unittest.TestCase):
         self.assertEqual(r["invalid_response_count"],1)
         self.assertTrue(r["collection"]["complete"])
 
+    def test_route_or_settings_missing_blocks_confirmatory_inference(self):
+        bad=[r.copy() for r in self.pos]
+        bad[0]["provider_route"]=None
+        self.assertEqual(
+            estimate_confirmatory(bad)["classification"],
+            "MISSING_PROVENANCE_NO_CONFIRMATORY_TEST"
+        )
+        bad[0]["provider_route"]="test/mock"
+        bad[1]["settings_json"]=None
+        self.assertEqual(
+            estimate_confirmatory(bad)["classification"],
+            "MISSING_PROVENANCE_NO_CONFIRMATORY_TEST"
+        )
+
+    def test_direction_and_practical_magnitude_are_separate(self):
+        result=estimate_confirmatory(self.pos)
+        self.assertEqual(result["statistical_direction"],"POSITIVE")
+        self.assertIn(result["practical_magnitude"],
+                      ("AT_LEAST_10PP_POSITIVE","UNRESOLVED",
+                       "BOUNDED_WITHIN_PLUS_MINUS_10PP"))
+        self.assertEqual(result["invalid_preference_worst_case_bounds"][0],
+                         result["invalid_preference_worst_case_bounds"][1])
+
+    def test_invalid_choice_sensitivity_is_reported(self):
+        corrupt=[r.copy() for r in self.pos]
+        matched=[r for r in corrupt if
+                 r["condition"]=="zero" and r["directive"]=="N" and
+                 r["frame"]=="priority"][:10]
+        for r in matched:
+            r["attempt_status"]="invalid_format"
+            r["raw_response"]="A or B"
+        result=estimate_confirmatory(corrupt)
+        self.assertEqual(result["invalid_response_count"],10)
+        low,high=result["invalid_preference_worst_case_bounds"]
+        self.assertLess(low,high)
+        self.assertEqual(result["primary_clusters"],15)
+
     def test_pilot_rows_cannot_be_analyzed_as_main(self):
         pilot=normalize_compatibility(compatibility_report())
         with self.assertRaisesRegex(IntegrityError,"UNKNOWN_TRIAL_ID"):
