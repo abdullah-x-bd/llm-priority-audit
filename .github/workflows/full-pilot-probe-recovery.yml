@@ -1,0 +1,88 @@
+name: Resume Pilot from Verified DeepSeek Probe
+on:
+  push:
+    branches: [main]
+    paths: ["config/pilot-probe-recovery.json"]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: llm-priority-audit-full-pilot-single-flight
+  cancel-in-progress: false
+jobs:
+  resume:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'AUTHORIZE_VERIFIED_PROBE_PILOT_RESUME')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prevent duplicate paid full-pilot resumes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          req=urllib.request.Request("https://api.github.com/repos/"+os.environ["GITHUB_REPOSITORY"]+"/actions/artifacts?per_page=100",
+             headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],"Accept":"application/vnd.github+json"})
+          with urllib.request.urlopen(req,timeout=25) as f:
+              artifacts=json.load(f)["artifacts"]
+          if any(a["name"].startswith("full-pilot-probe-resumed-") and not a.get("expired") for a in artifacts):
+              raise SystemExit("STOP: previous verified-probe recovery archive exists.")
+          PY
+      - name: Download exactly the original 260-row checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: full-pilot-atlas-38047792865
+          run-id: 38047792865
+          github-token: ${{ github.token }}
+          path: results/private/
+      - name: Download exactly one successful identity probe
+        uses: actions/download-artifact@v4
+        with:
+          name: deepseek-response-identity-38048702034
+          run-id: 38048702034
+          github-token: ${{ github.token }}
+          path: results/private/
+      - name: Fail-closed validation of immutable source checkpoint
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          s=json.loads(Path("results/private/full-pilot-live-checkpoint.json").read_text())
+          p=json.loads(Path("results/private/deepseek-identity-probe.json").read_text())
+          assert s["status"]=="STOP_UNINTERPRETABLE_BILLING_OR_MODEL_MODEL_RETURNED_DIFFERENT_IDENTIFIER"
+          assert s["inflight"]["index"]==260
+          assert s["inflight"]["model"]=="deepseek/deepseek-v3.2"
+          assert len(s["collected"])==260
+          assert abs(s["cost_usd"]-0.03290711)<0.00000001
+          assert len(s.get("rejected_attempts",[]))==5
+          assert s["inflight"]["trial_id"]==p["trial_id"]=="VERF-091-neutral-positive-N-layout1"
+          assert p["requested_model"]==p["returned_model"]=="deepseek/deepseek-v3.2"
+          assert p["usage"]["cost"]==0.000059
+          assert p["settings"]["provider"]["only"]==["AtlasCloud"]
+          print("Authenticated 260-record checkpoint and verified paid replacement for trial 261.")
+          PY
+      - name: Regression checks before billable continuation
+        run: |
+          python scripts/validate_scenarios.py > /tmp/scenario-audit.json
+          python -m unittest discover -s tests -v
+      - name: Reconcile one successful probe and continue remaining full-pilot cells
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          FULL_PILOT_RECONCILE_PROBE: results/private/deepseek-identity-probe.json
+        run: python -u scripts/full_pilot.py --mode live
+      - name: Archive every record and cumulative spending ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-pilot-probe-resumed-${{ github.run_id }}
+          path: |
+            results/private/full-pilot-live-checkpoint.json
+            results/private/full-pilot-live-records.jsonl
+            results/private/full-pilot-live-report.json
+            results/private/deepseek-identity-probe.json
+          if-no-files-found: error
+          retention-days: 90
