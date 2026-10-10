@@ -1,0 +1,10 @@
+{
+  "stage": "external-v3-model-semantic-review",
+  "overall_reasoning_models": 4,
+  "claude_case_families": 66,
+  "incremental_max_usd": 5.5,
+  "cumulative_project_max_usd": 8,
+  "human_signoffs_implied": false,
+  "experimental_model_choice_calls_authorized": false,
+  "single_live_attempt": true
+}
