@@ -211,6 +211,37 @@ def validate_collection(records,phase):
         "unresolved_exact_settings_rows":sum(r["settings_json"] is None for r in records)
     }
 
+def secondary_diagnostics(records):
+    """Descriptive only: no post-hoc confirmatory p-values."""
+    group=collections.defaultdict(list)
+    for r in records:
+        y=int(r["attempt_status"]=="valid_Q")
+        failed=int(r["attempt_status"] in ("invalid_refusal","invalid_format","uninterpretable"))
+        group[("frame_by_quality",r["frame"],r["condition"],r["directive"])].append((y,failed))
+        group[("domain",r["domain"],r["frame"],r["condition"],r["directive"])].append((y,failed))
+        group[("model",r["model_id"],r["frame"],r["condition"],r["directive"])].append((y,failed))
+        group[("q_label",r["q_label"],r["frame"],r["condition"],r["directive"])].append((y,failed))
+        group[("layout",r["layout"],r["frame"],r["condition"],r["directive"])].append((y,failed))
+    summaries={}
+    for k,values in sorted(group.items()):
+        summaries["|".join(k)]={
+            "valid_q_incidence":round(sum(x[0] for x in values)/len(values),6),
+            "invalid_model_completion_rate":round(sum(x[1] for x in values)/len(values),6),
+            "denominator":len(values)
+        }
+    frame_contrasts={}
+    for level in ("positive","zero","negative"):
+        a=summaries["frame_by_quality|priority|"+level+"|N"]
+        b=summaries["frame_by_quality|neutral|"+level+"|N"]
+        frame_contrasts[level]=round(a["valid_q_incidence"]-b["valid_q_incidence"],6)
+    return {
+        "frame_effect_by_quality_d_under_N":frame_contrasts,
+        "positive_minus_zero_frame_interaction":round(
+            frame_contrasts["positive"]-frame_contrasts["zero"],6),
+        "cells":summaries,
+        "policy":"All outcomes are descriptive; no secondary inferential tests or adjusted p-values predeclared."
+    }
+
 def estimate_confirmatory(records):
     validation=validate_collection(records,"main")
     if not validation["complete"]:
@@ -321,6 +352,7 @@ def estimate_confirmatory(records):
         "mechanisms":{d:[round(x,6) for x in v] for d,v in domain_data.items()},
         "invalid_response_count":sum(counts[x] for x in
                          ("invalid_format","invalid_refusal","uninterpretable")),
+        "secondary_descriptive":secondary_diagnostics(records),
         "collection":validation,
         "scientific_claim":(
            "At most, a semantic action-description framing effect in the authored "
