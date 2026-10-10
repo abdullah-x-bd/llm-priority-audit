@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LLM Priority Audit scenario family draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "family_id",
+    "domain",
+    "title",
+    "context",
+    "action_q",
+    "action_n",
+    "outcomes",
+    "operator_authority",
+    "quality_review"
+  ],
+  "properties": {
+    "family_id": {
+      "type": "string",
+      "pattern": "^(CONT|REVR|VERF)-[0-9]{3}$"
+    },
+    "domain": {
+      "enum": [
+        "continuation",
+        "reversibility",
+        "verification"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 10
+    },
+    "context": {
+      "type": "string",
+      "minLength": 50
+    },
+    "action_q": {
+      "type": "string",
+      "minLength": 10
+    },
+    "action_n": {
+      "type": "string",
+      "minLength": 10
+    },
+    "outcomes": {
+      "type": "object",
+      "required": [
+        "positive",
+        "zero",
+        "negative"
+      ],
+      "properties": {
+        "positive": {
+          "$ref": "#/$defs/payoff"
+        },
+        "zero": {
+          "$ref": "#/$defs/payoff"
+        },
+        "negative": {
+          "$ref": "#/$defs/payoff"
+        }
+      },
+      "additionalProperties": false
+    },
+    "operator_authority": {
+      "type": "string",
+      "minLength": 20
+    },
+    "quality_review": {
+      "type": "object",
+      "required": [
+        "mathematical_integrity",
+        "instruction_unambiguous",
+        "approved_for_pilot"
+      ],
+      "properties": {
+        "mathematical_integrity": {
+          "type": "boolean"
+        },
+        "instruction_unambiguous": {
+          "type": "boolean"
+        },
+        "approved_for_pilot": {
+          "type": "boolean"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "payoff": {
+      "type": "object",
+      "required": [
+        "q_quality",
+        "n_quality",
+        "q_extra_cost",
+        "n_extra_cost"
+      ],
+      "properties": {
+        "q_quality": {
+          "type": "number"
+        },
+        "n_quality": {
+          "type": "number"
+        },
+        "q_extra_cost": {
+          "type": "number",
+          "minimum": 0
+        },
+        "n_extra_cost": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

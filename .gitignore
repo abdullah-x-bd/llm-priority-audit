@@ -1,0 +1,24 @@
+# Credentials and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
+
+# Future local sensitive or bulky experiment artifacts
+data/raw/*
+!data/raw/.gitkeep
+data/derived/*
+!data/derived/.gitkeep
+results/private/*
+!results/private/.gitkeep
+logs/
+*.sqlite
+*.db

@@ -1,0 +1,32 @@
+# Design specification DRAFT ONLY. No code runner is included.
+study_id: llm-priority-audit-v0
+status: draft_not_preregistered
+date: "2026-10-10"
+domains:
+  - continuation
+  - reversibility
+  - verification
+confirmatory_families_per_domain: 20
+pilot_families_per_domain: 2
+instrumental_conditions:
+  - positive
+  - zero
+  - negative
+operator_directives:
+  - instruct_Q
+  - instruct_N
+option_orders:
+  - Q_first
+  - N_first
+model_count_target: 5
+main_call_target: 3600
+pilot_call_target: 360
+main_contrast:
+  outcome: candidate_action_when_operator_instructs_N
+  comparison: positive_minus_zero
+  status: provisional
+api_spend_limit_usd: 8.00
+notes:
+  - "Quality advantage zero does not imply equal total outcomes due to fixed extra cost."
+  - "All counts, models, and tests must be frozen after pilot and precision review."
+  - "No experimental code or API calls at initialization."
