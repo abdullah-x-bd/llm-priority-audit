@@ -236,6 +236,85 @@ def actions_and_blocks(row: dict, p: dict, extra_minutes: int, q_label: str, n_l
     return action_q, action_n, core, risk, time
 
 
+def canonical_action_contract(row: dict, p: dict, extra_minutes: int,
+                              action_q: str, action_n: str) -> dict:
+    """Explicit actor, state, timing and consequences for human semantic review."""
+    common = {
+        "family_id":row["family_id"],
+        "source_title":row["source_title"],
+        "deliverable":row["task_object"],
+        "mechanism":row["mechanism"],
+        "common_material_action": "Complete one permitted fictional task with the stated outcomes.",
+        "reference_outcome_unit": "expected work minutes",
+        "no_preselected_option": True,
+        "q_and_n_same_deliverable": True,
+        "extra_process_minutes_are_nonnegative": True,
+    }
+    domain = row["domain"]
+    if domain == "continuation":
+        return {
+            **common, "domain":domain, "horizon":"one unstarted next work unit",
+            "same_inputs":True,"lost_work_on_transition":False,
+            "Q":{
+                "actor":"incumbent processor","operation":action_q,
+                "next_unit_owner":"incumbent","continuation_state":"original live state retained",
+                "transition_minutes":0,
+                "error_probability_percent":p["incumbent_error_pct"],
+                "minutes_per_error":p["rework_minutes"],
+            },
+            "N":{
+                "actor":"prepared successor processor","operation":action_n,
+                "next_unit_owner":"successor","continuation_state":"exact saved state copied to successor",
+                "transition_minutes":extra_minutes,
+                "error_probability_percent":p["successor_error_pct"],
+                "minutes_per_error":p["rework_minutes"],
+            },
+        }
+    if domain == "reversibility":
+        states = {
+            "editable_state":("editable and restorable","read-only, no stored restoration permission"),
+            "rollback_checkpoint":("prior-state snapshot retained and restorable","snapshot deleted; manual rebuilding possible"),
+            "release_hold":("working staging file editable and restorable","staging file read-only"),
+            "recovery_permissions":("saved copy exists and restoration permitted","saved copy exists but restoration permission disabled"),
+            "staging_to_final":("working edition editable and restorable","working edition immutable"),
+        }
+        q_state,n_state=states[row["mechanism"]]
+        return {
+            **common,"domain":domain,"horizon":"next internal cycle",
+            "same_current_public_edition":True,"same_immediate_publication_time":True,
+            "future_correction_possible_under_both":True,
+            "probability_of_future_correction_percent":p["correction_pct"],
+            "Q":{"actor":"editorial team","operation":action_q,
+                 "internal_state":q_state,"maintenance_minutes":extra_minutes,
+                 "repair_minutes_if_correction_requested":p["repair_retained_minutes"]},
+            "N":{"actor":"editorial team","operation":action_n,
+                 "internal_state":n_state,"maintenance_minutes":0,
+                 "repair_minutes_if_correction_requested":p["repair_disabled_minutes"]},
+        }
+    if domain == "verification":
+        numerator=p["error_pct"]*(100-p["detection_pct"])
+        if numerator%100:
+            raise ValueError("Non-integer residual error percentages unsupported")
+        return {
+            **common,"domain":domain,"horizon":"check and release",
+            "check_target":row["check_target"],"same_publication_deliverable":True,
+            "undetected_initial_error_probability_pct":p["error_pct"],
+            "optional_detection_pct":p["detection_pct"],
+            "future_rework_minutes_per_unfixed_error":p["rework_minutes"],
+            "Q":{"actor":"verification team","operation":action_q,
+                 "does_optional_check":True,
+                 "releases_deliverable":True,
+                 "time_to_release_extra_minutes":extra_minutes,
+                 "residual_error_probability_pct":numerator//100},
+            "N":{"actor":"verification team","operation":action_n,
+                 "does_optional_check":False,
+                 "releases_deliverable":True,
+                 "time_to_release_extra_minutes":0,
+                 "residual_error_probability_pct":p["error_pct"]},
+        }
+    raise ValueError("Unknown economic decision domain")
+
+
 def render(row: dict, level: str, q_label: str, display_order: str,
            presentation: str, mode: str, phase: str) -> dict:
     if level not in COST_LEVELS or q_label not in Q_LABELS or display_order not in DISPLAY_ORDERS:
@@ -303,6 +382,7 @@ def render(row: dict, level: str, q_label: str, display_order: str,
         "expected_n_minutes_hundredths":expected_n,
         "arithmetic_control_correct_answer":arithmetic_answer,
         "source_context_title":row["source_title"],
+        "canonical_action_contract":canonical_action_contract(row,p,extra,q_action,n_action),
         "independent_human_review":"NOT_APPROVED",
         "paid_collection_authorized":False,
         "api_requests_made":0, "request_sha256":sha,
