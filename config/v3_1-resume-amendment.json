@@ -1,0 +1,12 @@
+{
+  "protocol_id": "v3.1-2026-10-11-single-shot",
+  "operation": "RECOVER_NO_DUPLICATE_PAID_CALIBRATION_THEN_CONDITIONAL_MAIN",
+  "source_run_id": 38078421238,
+  "source_artifact_id": 11679079551,
+  "preserve_all_original_attempts": true,
+  "no_repeat_of_valid_paid_responses": true,
+  "gemini_invalid_400_resubmission_only_after_compatible_canary": true,
+  "scientific_inclusion_and_gates_unchanged": true,
+  "new_spend_cap_usd": 5.7,
+  "no_automatic_relaunch": true
+}
