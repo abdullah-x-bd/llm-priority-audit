@@ -28,6 +28,14 @@ class MainV2Tests(unittest.TestCase):
             self.assertNotIn("preset",fam["neutral_action_n"].lower())
             self.assertEqual(fam["operator_authority"],"")
             self.assertIn(COMMON_NOTES[fam["domain"]],fam["context"])
+    def test_framing_variants_roughly_equal_length(self):
+        for mechanism, wording in PATTERNS.items():
+            for a,b in (("Q","q"),("N","n")):
+                with self.subTest(mechanism=mechanism,option=a):
+                    ratio=len(wording[a])/len(wording[b])
+                    self.assertGreaterEqual(ratio,.80)
+                    self.assertLessEqual(ratio,1.25)
+
     def test_v1_source_unchanged(self):
         old={x["family_id"]:x for x in load_families("main")}
         self.assertEqual(set(old),{x["family_id"] for x in self.families})
