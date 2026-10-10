@@ -1,0 +1,11 @@
+{
+  "source_checkpoint_run": 38047792865,
+  "source_successful_records": 260,
+  "interrupted_trial_index": 260,
+  "probe_run": 38048702034,
+  "probe_cost_usd": 0.000059,
+  "probe_model": "deepseek/deepseek-v3.2",
+  "probe_provider": "AtlasCloud",
+  "preserve_unaccepted_response": true,
+  "total_pilot_budget_usd": 0.75
+}
