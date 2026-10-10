@@ -270,6 +270,85 @@ class CollectorTests(unittest.TestCase):
             self.assertEqual(transport.failed_calls,1)
             sleep.assert_not_called()
 
+    def test_raw_first_archives_incomplete_http200_and_continues(self):
+        class IncompleteOnce(FakeService):
+            def request(self,path,body=None):
+                response=super().request(path,body)
+                if path=="/chat/completions" and self.calls==4:
+                    return {"id":"gen-incomplete-mock","error":{"code":502,
+                            "message":"upstream provider failed"}}
+                return response
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.dict(os.environ,{"FULL_PILOT_RAW_FIRST":"1"}):
+                with mock.patch("full_pilot.time.sleep"):
+                    state=collect(IncompleteOnce(REF),Path(tmp),"live",max_requests=8)
+            self.assertEqual(state["status"],"PARTIAL_EXPLICIT_TEST")
+            self.assertEqual(len(state["collected"]),8)
+            self.assertEqual(state["collected"][3]["attempt_status"],"provider_error")
+            self.assertIsNone(state["collected"][3]["billed_cost_usd"])
+            self.assertEqual(len(state["raw_events"]),8)
+            self.assertEqual(state["raw_events"][3]["response"]["id"],"gen-incomplete-mock")
+            self.assertEqual(state["raw_events"][3]["response"]["error"]["code"],502)
+            self.assertGreaterEqual(state["unresolved_rejection_reserve_usd"],.03)
+            self.assertEqual(state["collected"][4]["attempt_status"],"valid_N"
+                             if state["collected"][4]["directive"]=="N" else "valid_Q")
+
+    def test_raw_first_preserves_mismatched_model_without_validating_as_choice(self):
+        class WrongModel(FakeService):
+            def request(self,path,body=None):
+                response=super().request(path,body)
+                if path=="/chat/completions" and self.calls==2:
+                    response["model"]="another/unapproved-model"
+                return response
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.dict(os.environ,{"FULL_PILOT_RAW_FIRST":"1"}):
+                with mock.patch("full_pilot.time.sleep"):
+                    result=collect(WrongModel(REF),Path(tmp),"live",max_requests=5)
+            self.assertEqual(len(result["collected"]),5)
+            self.assertEqual(result["collected"][1]["attempt_status"],"provider_error")
+            self.assertEqual(result["collected"][1]["billed_cost_usd"],.00012)
+            self.assertEqual(result["raw_events"][1]["response"]["model"],"another/unapproved-model")
+            self.assertIsNone(result["inflight"])
+
+    def test_raw_first_network_failure_is_not_a_choice_and_never_retried(self):
+        class FailsOnce(FakeService):
+            def __init__(self,ref):
+                super().__init__(ref)
+                self.failed=False
+            def request(self,path,body=None):
+                if path=="/chat/completions" and self.calls==1 and not self.failed:
+                    self.failed=True
+                    raise APIProblem("NETWORK_UNCERTAIN")
+                return super().request(path,body)
+        with tempfile.TemporaryDirectory() as tmp:
+            service=FailsOnce(REF)
+            with mock.patch.dict(os.environ,{"FULL_PILOT_RAW_FIRST":"1"}):
+                with mock.patch("full_pilot.time.sleep"):
+                    result=collect(service,Path(tmp),"live",max_requests=5)
+            self.assertEqual(len(result["collected"]),5)
+            self.assertEqual(service.calls,4)
+            self.assertEqual(result["collected"][1]["attempt_status"],"transport_failure")
+            self.assertEqual(result["raw_events"][1]["error"]["reason"],"NETWORK_UNCERTAIN")
+            self.assertEqual(sum(r["attempt_status"]=="transport_failure"
+                                 for r in result["collected"]),1)
+
+    def test_raw_first_entire_partial_batch_allows_incomplete_pilot_rows(self):
+        class ProviderFailure(FakeService):
+            def request(self,path,body=None):
+                response=super().request(path,body)
+                if path=="/chat/completions" and self.calls==8:
+                    return {"id":"gen-error","error":{"code":502},"usage":{"cost":.00012}}
+                return response
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.dict(os.environ,{"FULL_PILOT_RAW_FIRST":"1"}):
+                with mock.patch("full_pilot.time.sleep"):
+                    result=collect(ProviderFailure(REF),Path(tmp),"live",max_requests=9)
+            self.assertEqual(len(result["collected"]),9)
+            self.assertEqual(result["collected"][7]["attempt_status"],"provider_error")
+            self.assertEqual(result["raw_events"][7]["response"]["id"],"gen-error")
+            self.assertEqual(result["collected"][7]["billed_cost_usd"],.00012)
+            self.assertEqual(len({(r["model_id"],r["trial_id"]) for r in result["collected"]}),9)
+
     def test_never_touch_main_source(self):
         _,selected=sample_plan()
         self.assertTrue(all(int(t["family_id"].split("-")[-1])>=91 for _,t in selected))
