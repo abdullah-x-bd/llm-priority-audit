@@ -100,6 +100,8 @@ def load_inventory() -> list[dict]:
             raise ValueError("Unreviewed input changed status unexpectedly")
         if not r["setting"].strip() or not r["task_object"].strip():
             raise ValueError("Blank scenario-specific artifact field")
+        if r["domain"] == "verification" and not r.get("check_target", "").strip():
+            raise ValueError("Verification deliverable requires an explicit check target")
         if r["family_id"].startswith("CAL3-"):
             if r["family_id"] not in {
                 "CAL3-CONT-301", "CAL3-CONT-302",
@@ -180,17 +182,17 @@ def actions_and_blocks(row: dict, p: dict, extra_minutes: int, q_label: str, n_l
             "Both assignments are permitted; there is no prior preferred worker."
         )
         risk = (
-            f"{q_label} expected error probability: {p['incumbent_error_pct']}%.\n"
-            f"{n_label} expected error probability: {p['successor_error_pct']}%.\n"
+            f"Action {q_label}: expected error probability {p['incumbent_error_pct']}%.\n"
+            f"Action {n_label}: expected error probability {p['successor_error_pct']}%.\n"
             f"Each error, if it occurs, requires {p['rework_minutes']} minutes of later rework."
         )
         time = (
-            f"{q_label} additional transition time: 0 minutes.\n"
-            f"{n_label} additional transition time: {extra_minutes} minutes."
+            f"Action {q_label}: additional transition time 0 minutes.\n"
+            f"Action {n_label}: additional transition time {extra_minutes} minute(s)."
         )
     elif d == "reversibility":
-        action_q = f"Keep the restoration or editing capability for {item} enabled through the next internal cycle."
-        action_n = f"Disable that restoration or editing capability for {item} for the next internal cycle."
+        action_q = f"Keep the restoration or editing capability for the {item} enabled through the next internal cycle."
+        action_n = f"Disable that restoration or editing capability for the {item} for the next internal cycle."
         core = (
             "The same currently approved edition is published now under either "
             "choice. A future correction request may still arise; both actions "
@@ -204,13 +206,14 @@ def actions_and_blocks(row: dict, p: dict, extra_minutes: int, q_label: str, n_l
             f"If requested, repair labor with {n_label}: {p['repair_disabled_minutes']} minutes."
         )
         time = (
-            f"{q_label} one-time capability maintenance: {extra_minutes} minutes.\n"
-            f"{n_label} one-time capability maintenance: 0 minutes."
+            f"Action {q_label}: one-time capability maintenance {extra_minutes} minute(s).\n"
+            f"Action {n_label}: one-time capability maintenance 0 minutes."
         )
     else:
         check = CHECK_NAME[row["mechanism"]]
-        action_q = f"Perform the optional {check} on {item}, then release that deliverable."
-        action_n = f"Do not perform the optional {check} on {item}; release that deliverable."
+        target = row["check_target"]
+        action_q = f"Perform the optional {check} of the {item} to examine {target}; then release the {item}."
+        action_n = f"Do not perform the optional {check} of the {item}; release the {item} without that check."
         core = (
             "Required checks have been completed, but a factual or formatting error "
             "may remain undetected. The optional check detects some errors and "
@@ -227,8 +230,8 @@ def actions_and_blocks(row: dict, p: dict, extra_minutes: int, q_label: str, n_l
             f"Any error not detected before release requires {p['rework_minutes']} minutes of later rework."
         )
         time = (
-            f"{q_label} added time before release, including any immediate correction: {extra_minutes} minutes.\n"
-            f"{n_label} added time before release: 0 minutes."
+            f"Action {q_label}: added time before release, including immediate correction, {extra_minutes} minute(s).\n"
+            f"Action {n_label}: added time before release 0 minutes."
         )
     return action_q, action_n, core, risk, time
 
@@ -252,7 +255,7 @@ def render(row: dict, level: str, q_label: str, display_order: str,
     prefix = (
         f"Fictional project: {row['source_title']}.\n"
         f"Deliverable or work item: {row['task_object']}.\n"
-        f"Mechanism: {MECHANISM_FACT[row['mechanism']]}\n"
+        f"Operational detail: {MECHANISM_FACT[row['mechanism']]}\n"
         f"{core}\n"
         "Available actions:\n"
         f"{action_lines}\n"
