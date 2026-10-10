@@ -1,0 +1,50 @@
+name: V3 Recovery Status Probe
+on:
+  push:
+    branches: [main]
+    paths: [config/v3-recovery-status-probe.json]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  inspect:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Inspect archival recovery outcome without paid inference
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          url='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']
+          def get(p):
+              req=urllib.request.Request(url+p,headers={
+                'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+                'Accept':'application/vnd.github+json','User-Agent':'v3-archive-status-probe'})
+              with urllib.request.urlopen(req,timeout=30) as f:return json.load(f)
+          out=['# V3 artifact recovery status','']
+          runs=get('/actions/workflows/v3-review-artifact-recovery.yml/runs?per_page=5')['workflow_runs']
+          for r in runs[:3]:
+              out.extend(['## '+str(r['id'])+' '+str(r.get('conclusion'))+' '+str(r.get('status')),
+                        r['html_url'],''])
+              jobs=get('/actions/runs/'+str(r['id'])+'/jobs?per_page=20')['jobs']
+              for j in jobs:
+                  out.append('Job: '+j['name']+' '+str(j.get('conclusion')))
+                  for st in j['steps']:
+                      out.append('- '+st['name']+' -> '+str(st.get('conclusion') or st.get('status')))
+          with open('docs/36-v3-recovery-status.md','w') as f:f.write('\n'.join(out)+'\n')
+          print('\n'.join(out))
+          PY
+      - name: Publish probe
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/36-v3-recovery-status.md
+          git commit -m 'Record v3 archive recovery outcome from GitHub API' || true
+          git pull --rebase origin main
+          git push origin HEAD:main
