@@ -1,0 +1,11 @@
+{
+  "purpose": "one independent blinded OPEN-ENDED methodological critique, not confirmation",
+  "model": "anthropic/claude-opus-4.7",
+  "source_pattern_count": 15,
+  "prior_sonnet_reviews_in_prompt": false,
+  "prior_pilot_outcomes_in_prompt": false,
+  "maximum_paid_completion_requests": 1,
+  "max_additional_cost_usd": 0.5,
+  "total_study_ceiling_usd": 8,
+  "launch_confirmatory": false
+}
