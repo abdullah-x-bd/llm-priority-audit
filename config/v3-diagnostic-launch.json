@@ -1,6 +1,6 @@
 {
-  "task": "read-only-v3-failure-diagnosis",
-  "model_calls_allowed": 0,
-  "rerun_paid_workflow": false,
-  "inspect_last_runs": 4
+    "task": "read-only-v3-failure-diagnosis",
+    "model_calls_allowed": 0,
+    "rerun_paid_workflow": false,
+    "inspect_last_runs": 4
 }
