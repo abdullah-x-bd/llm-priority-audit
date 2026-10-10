@@ -98,6 +98,10 @@ class FakeService:
         if path.startswith("/generation?id="):
             return {"data":{"provider_name":"OFFLINE_TEST_ONLY","total_cost":0.00012}}
         if path=="/chat/completions":
+            if body.get("provider",{}).get("only")!=[PINNED_PROVIDERS.get(body.get("model"))]:
+                raise PilotStopped("MOCK_DETECTED_UNPINNED_PROVIDER")
+            if body.get("provider",{}).get("allow_fallbacks") is not False:
+                raise PilotStopped("MOCK_DETECTED_UNAPPROVED_FALLBACK")
             self.calls+=1
             self.generation+=1
             directive=body["messages"][-1]["content"].split("Operator directive: Select action ")[1][0]
