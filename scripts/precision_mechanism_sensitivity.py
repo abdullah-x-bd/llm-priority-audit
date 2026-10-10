@@ -35,9 +35,7 @@ def simulate(base=.05, effect=.05, mech_sd=.06, scenario_sd=.015, reps=REPS):
             mechanism_means=[]
             for mechanism in range(MECHANISMS):
                 common_base=rng.gauss(0,mech_sd)
-                # A genuine sharp null must have p1 == p0; otherwise clipping
-                # a random treatment shock produces a false nonzero null effect.
-                common_effect = 0.0 if effect == 0 else rng.gauss(0,mech_sd/2)
+                common_effect=rng.gauss(0,mech_sd/2)
                 diffs=[]
                 for ctx in range(CONTEXTS):
                     local=rng.gauss(0,scenario_sd)

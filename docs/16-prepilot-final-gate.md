@@ -54,3 +54,24 @@ To require **full signed readiness** rather than a diagnostic report, run `pytho
 ## Remaining action
 
 We will use `docs/13-independent-review.md` for the independent scenario review and only then resolve whether the existing neutral control wording is adequate or requires controlled revision *before* any pilot observations.
+
+
+## Final reproducible run
+
+Our final corrected offline GitHub Actions run is
+https://github.com/abdullah-x-bd/llm-priority-audit/actions/runs/38039313140 .
+
+- **24 of 24** unit, metamorphic and negative-mutation tests passed.
+- The structural validator reported **zero** errors for 60 main and 6 pilot families.
+- Generated prompts per model were verified to be **1,440 main** and **144 pilot**.
+- Our v1.0 stimulus audit reported **15 distinct target-action pairs** across 60 main families, with at most four reused contexts per pair.
+- Mean target-pair description length was **150.67 characters**, compared with **118.87** for control pairs, a control-to-target ratio of **0.789**.
+- The independent-readiness gate returned **false**, including **0/6** signed pilot approvals.
+- The **corrected sharp-null** mechanism planning simulations, using only 100 replications each, generated approximately 4% and 5% illustrative rejection rates for two settings. An earlier uncorrected simulation had mistakenly introduced random treatment heterogeneity under a nominal zero-effect setting and must **not** be cited as a true-null calibration.
+- Illustrative full-main-plus-pilot cost stress estimates for five models were **$1.9211**, **$3.8687**, **$6.8033** and **$10.7382** under successively heavier token-usage assumptions. The largest scenario exceeds the $8 inference ceiling. These estimates are not invoices, do not include purchasing fees, and do not enforce actual API budgets.
+
+**Final offline engineering verdict:** PASS.  
+**Independent scientific readiness for a paid pilot:** NO-GO until control comparability and pilot semantic approval have been resolved and the pilot budget policy is frozen.  
+**Readiness for a confirmatory run:** NO-GO until the additional preregistration, roster, power and inference gates are satisfied.
+
+No actual LLM research responses were elicited. The readiness-gate tool is intentionally separate from the engineering CI result.

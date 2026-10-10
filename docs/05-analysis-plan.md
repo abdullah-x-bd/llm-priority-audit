@@ -41,7 +41,7 @@ We first compute a paired priority-minus-neutral response contrast for each fami
 
 For the **authored finite set** of family-model-layout cells, we report the realized contrast without implying random sampling of real-world tasks.
 
-For uncertainty, we will compare **mechanism-clustered** and family-clustered sensitivity estimates. The 60 context families share only 15 distinct target action-description pairs, with five mechanisms per domain and four contexts per mechanism. Family-level bootstrap intervals may understate uncertainty if within-mechanism dependence is substantial. Mechanism-cluster bootstrap resampling would have only 5 units within each domain, so ordinary normal or naive percentile intervals are not automatically reliable. We will calibrate error rates under true sharp-null simulations and choose a defensible small-cluster method before preregistration, or limit inference to the finite authored set without claims about a population of mechanisms.
+For uncertainty, we plan a *stratified family bootstrap* (resampling the 20 families per domain with both frame arms, both layouts and all models kept together) and percentile or studentized intervals chosen and frozen before confirmatory evaluation. This expresses a hypothetical population-of-similar-scenarios interpretation only under exchangeability assumptions; it is not a randomization-based sampling CI for all possible LLM tasks.
 
 We will additionally report per-family paired distributions and a sensitivity analysis based on a logistic mixed model with model fixed effects, domain/semantic mechanism factors and family-specific intercepts. Heterogeneous prompt difficulty and endpoint correlation require caution when fitting models with few clusters.
 
