@@ -1,0 +1,56 @@
+name: One Fresh Opus Methods Critique
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/opus-fresh-methods-launch.json
+permissions:
+  contents: read
+concurrency:
+  group: one-fresh-opus-methods-critique
+  cancel-in-progress: false
+jobs:
+  fresh-critique:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'AUTHORIZE_FRESH_OPUS_CRITIQUE')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prevent duplicated paid independent-model meta-reviews
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          url='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=20) as f:
+            artifacts=json.load(f)['artifacts']
+          if any(a['name'].startswith('opus-independent-methods-') and not a.get('expired') for a in artifacts):
+            raise SystemExit("Previous archive exists. Never make unsupervised duplicate billable review.")
+          PY
+      - name: Verify original design, cost ceiling and offline one-call behavior
+        run: |
+          python -m unittest discover -s tests -p test_opus_fresh_methods_review.py -v
+          python - <<'PY'
+          import sys
+          sys.path.insert(0,"scripts")
+          from opus_fresh_methods_review import independent_prompt,reserve,COST_CAP
+          assert reserve(independent_prompt())<COST_CAP
+          print("One blinded methodological critique allowed; 0 main model trials authorized.")
+          PY
+      - name: One open-ended Opus 4.7 review via OpenRouter
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/opus_fresh_methods_review.py --mode live
+      - name: Archive original prompt, unedited reply and usage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opus-independent-methods-${{ github.run_id }}
+          path: results/private/frontier-methods-critique/one-pass-opus-methods-review.json
+          if-no-files-found: warn
+          retention-days: 90
