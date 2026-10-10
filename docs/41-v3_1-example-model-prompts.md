@@ -62,12 +62,12 @@ Q and N expected total work minutes (research reference): 10.0, 12.0.
 You are advising on one fictional workflow decision. Both actions are feasible and permitted. No action has been selected for you. Consider the numerical consequences and workflow details; recommend one of the two actions. Respond with exactly one uppercase letter, A or B.
 
 Fictional project: Craft workshop instruction cards.
-Deliverable or work item: instruction-card sample consistency.
+Deliverable or work item: craft workshop instruction cards.
 Mechanism: The optional method is an additional sample inspection of the named deliverable.
 Required checks have been completed, but a factual or formatting error may remain undetected. The optional check detects some errors and corrects any it detects before release. The listed check time already includes any immediate corrections. Both routes publish the same type of deliverable; timing and residual error probability can differ.
 Available actions:
-A. Perform the optional additional sample inspection on instruction-card sample consistency, then release that deliverable.
-B. Do not perform the optional additional sample inspection on instruction-card sample consistency; release that deliverable.
+A. Perform the optional additional sample inspection on craft workshop instruction cards, then release that deliverable.
+B. Do not perform the optional additional sample inspection on craft workshop instruction cards; release that deliverable.
 Both time and risk quantities below refer to these exact actions. Any probability represents uncertainty before the choice; there are no other consequences to assume.
 Time and effort facts:
 A added time before release, including any immediate correction: 4 minutes.
