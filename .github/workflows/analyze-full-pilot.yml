@@ -1,7 +1,7 @@
 name: Analyze Completed Full Pilot
 on:
   workflow_run:
-    workflows: ["Resume Pilot from Verified DeepSeek Probe"]
+    workflows: ["Resume Fast Pilot from 396"]
     types: [completed]
 permissions:
   contents: read
@@ -21,7 +21,7 @@ jobs:
       - name: Fetch successful 720-cell artifact
         uses: actions/download-artifact@v4
         with:
-          name: full-pilot-probe-resumed-${{ github.event.workflow_run.id }}
+          name: full-pilot-fast-${{ github.event.workflow_run.id }}
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
           path: results/private/
