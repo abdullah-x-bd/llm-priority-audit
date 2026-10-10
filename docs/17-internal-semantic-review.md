@@ -11,7 +11,7 @@ See `data/reviews/internal-semantic-audit.csv` for all 66 decisions, the status 
 - 66/66 source families inspected and logged; 6/6 pilot families considered internally fit for **limited technical compatibility testing**.
 - Obvious mechanism/context mismatches in four verification scenarios repaired and rechecked.
 - At every family, the difference in mean action-description length between the target and neutral frames is under 10%.
-- All families share two neutral code-based configuration options with the same grammar and length within the control frame.
+- Each neutral frame uses two code-based configurations with matched grammar and length. Within each domain, every pair of configuration codes appears twice across contexts with its Q/N mapping reversed. This counterbalances code-specific preferences by mechanism and context without increasing API calls.
 - Numerical equality of stated scores and costs remains preserved at `V=0`.
 - All control pairs are *conditionally* accepted for technical measurement. They remain a distinct decision type from the procedure-specific actions and cannot isolate a pure psychological motive.
 - The main source now has 18 distinct literal target-action pairs, grouped into 15 mechanism categories over 60 contexts; mechanism-level sensitivity analysis is necessary.

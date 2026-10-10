@@ -116,6 +116,17 @@ class PromptMetamorphicTests(unittest.TestCase):
             self.assertEqual(len({t["request_sha256"] for t in trials}), len(trials))
             self.assertEqual(trials, build_manifest(phase))
 
+    def test_neutral_configuration_code_counterbalanced(self):
+        import re
+        token=lambda x: re.search(r"\\b[A-Z][0-9]{2}\\b",x).group()
+        for domain in ("continuation", "reversibility", "verification"):
+            rows=[x for x in load_families("main") if x["domain"]==domain]
+            self.assertEqual(len(rows),20)
+            for i in range(10):
+                a,b=rows[i],rows[i+10]
+                self.assertEqual(token(a["neutral_action_q"]), token(b["neutral_action_n"]))
+                self.assertEqual(token(a["neutral_action_n"]), token(b["neutral_action_q"]))
+
     def test_no_main_pilot_overlap(self):
         main = load_families("main")
         pilot = load_families("pilot")
