@@ -59,8 +59,21 @@ class Transport:
                 content=res.read(4_000_000)
             return json.loads(content)
         except urllib.error.HTTPError as e:
-            # Never log full provider error body; may contain sensitive detail.
-            raise APIProblem("HTTP_"+str(e.code)) from None
+            # Read only the standard OpenRouter error envelope. Never log
+            # original full body, request headers or credentials.
+            category="unspecified"
+            try:
+                obj=json.loads(e.read(4096))
+                message=str(obj.get("error",{}).get("message",""))
+                typed=str(obj.get("error",{}).get("metadata",{}).get("error_type",""))
+                # Redact long tokens and restrict to a short, safe diagnostic.
+                import re
+                clean=re.sub(r"[A-Za-z0-9_./+-]{25,}","REDACTED",message)
+                clean=re.sub(r"[^A-Za-z0-9 _.,:;()/-]","",clean)[:150]
+                category=(typed[:40]+"_"+clean) if (typed or clean) else "unspecified"
+            except Exception:
+                pass
+            raise APIProblem("HTTP_"+str(e.code)+"_"+category) from None
         except (TimeoutError, urllib.error.URLError, OSError) as e:
             raise APIProblem("NETWORK_UNCERTAIN") from None
         except (ValueError, UnicodeError, TypeError):
