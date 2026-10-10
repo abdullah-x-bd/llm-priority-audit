@@ -83,16 +83,25 @@ def main():
     if not key:raise SystemExit("Key secret missing; no charged requests performed")
     rows=read_records(a.input)
     check=validate_collection(rows,"pilot")
-    if not check["complete"]:
-        raise SystemExit("Full pilot is incomplete; metadata hydration must await resolution.")
+    if check["missing_rows"]!=0 or check["received"]!=720:
+        raise SystemExit("Expected all 720 attempted pilot cells, including failed responses.")
+    # One recorded provider-error row has no recoverable generation metadata.
     result,issues=hydrate(rows,Transport(key))
     a.output.parent.mkdir(parents=True,exist_ok=True)
     write_records(a.output,result)
     a.issues.write_text(json.dumps({"issues":issues,"records":len(result),
         "routes_resolved":sum(bool(r["provider_route"]) for r in result)},indent=2)+"\n")
     validate_collection(result,"pilot")
-    print(json.dumps({"route_coverage":sum(bool(r["provider_route"]) for r in result),
-          "rows":len(result),"issues":len(issues),"no_paid_calls":True}))
-    return 0 if all(x["provider_route"] for x in result) else 2
+    expected=sum(bool(gen_id(r)) for r in rows)
+    resolved=sum(bool(r["provider_route"]) for r in result)
+    from collections import Counter
+    counts=Counter(r["provider_route"] for r in result if r["provider_route"])
+    issue_counts=Counter(x["reason"] for x in issues)
+    print(json.dumps({"provider_routes_resolved":resolved,
+          "resolvable_generation_ids":expected,"attempted_rows":len(result),
+          "issues":dict(issue_counts),"provider_counts":dict(counts),
+          "no_paid_inference_calls":True}))
+    return 0 if resolved==expected and not any(
+        x["reason"]=="COST_RECONCILIATION_DIFFERENCE" for x in issues) else 2
 if __name__=="__main__":
     sys.exit(main())
