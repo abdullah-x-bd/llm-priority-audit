@@ -1,0 +1,84 @@
+name: Resume Fast Pilot from 396
+on:
+  push:
+    branches: [main]
+    paths: ["config/full-pilot-fast-resume.json"]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: llm-priority-audit-full-pilot-single-flight
+  cancel-in-progress: false
+jobs:
+  resume:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'AUTHORIZE_FULL_PILOT_FAST_RESUME')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prevent duplicate fast paid resumes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          url="https://api.github.com/repos/"+os.environ["GITHUB_REPOSITORY"]+"/actions/artifacts?per_page=100"
+          req=urllib.request.Request(url,headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],"Accept":"application/vnd.github+json"})
+          with urllib.request.urlopen(req,timeout=25) as resp:
+              items=json.load(resp)["artifacts"]
+          if any(x["name"].startswith("full-pilot-fast-") and not x.get("expired") for x in items):
+              raise SystemExit("STOP: prior full-pilot-fast archive exists. No unsupervised duplicate paid run.")
+          print("No prior fast-pilot artifact; continuing from source run 38048999477.")
+          PY
+      - name: Recover exact 396-response checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: full-pilot-probe-resumed-38048999477
+          run-id: 38048999477
+          github-token: ${{ github.token }}
+          path: results/private/
+      - name: Assert immutable starting index and budget
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("results/private/full-pilot-live-checkpoint.json")
+          x=json.loads(p.read_text())
+          assert len(x["collected"])==396
+          assert x["inflight"]["index"]==396
+          assert x["inflight"]["model"]=="deepseek/deepseek-v3.2"
+          assert x["inflight"]["trial_id"]=="REVR-091-neutral-zero-Q-layout0"
+          assert x["status"].startswith("STOP_UNCERTAIN_CHARGE_HTTP_429")
+          assert abs(x["cost_usd"]-.05004672)<1e-8
+          assert len(x["rejected_attempts"])==6
+          from sys import path
+          path.insert(0,"scripts")
+          from full_pilot import sample_plan
+          model,trial=sample_plan()[1][396]
+          assert model==x["inflight"]["model"] and trial["trial_id"]==x["inflight"]["trial_id"]
+          print("Validated 396 immutable real observations and trial 397 rejection.")
+          PY
+      - name: Full offline regression suite before new billable calls
+        run: |
+          python scripts/validate_scenarios.py > /tmp/preflight.json
+          python -m unittest discover -s tests -v
+      - name: Collect 324 remaining pilot cells with bounded HTTP429 backoff
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          FULL_PILOT_RECOVER_HTTP429: ACKNOWLEDGED_RATE_LIMIT
+        run: python -u scripts/full_pilot.py --mode live
+      - name: Always archive updated checkpoint and records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-pilot-fast-${{ github.run_id }}
+          path: |
+            results/private/full-pilot-live-checkpoint.json
+            results/private/full-pilot-live-records.jsonl
+            results/private/full-pilot-live-report.json
+            results/private/deepseek-identity-probe.json
+          if-no-files-found: error
+          retention-days: 90
