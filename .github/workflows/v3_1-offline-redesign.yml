@@ -56,7 +56,7 @@ jobs:
               'ci_verified_offline':True,'main':main,'calibration':cal,
               'external_human_review_completed':False,'live_model_calls':0,
               'approval_for_calibration_or_main':False
-          },indent=2)+'\\n')
+          },indent=2)+'\n')
           manifest=[json.loads(line) for line in
               (p/'v3_1-main-offline-unapproved.jsonl').read_text().splitlines()]
           samples=[]
@@ -71,8 +71,8 @@ jobs:
                   str(row['expected_n_minutes_hundredths']/100)+'.','',
                   '```text',row['system_message'],'',row['user_message'],'```',''])
           Path('docs/41-v3_1-example-model-prompts.md').write_text(
-              '# V3.1 exact example prompts, offline and unapproved\\n\\n'+
-              '\\n'.join(samples),encoding='utf-8')
+              '# V3.1 exact example prompts, offline and unapproved\n\n'+
+              '\n'.join(samples),encoding='utf-8')
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
