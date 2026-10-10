@@ -1,0 +1,97 @@
+name: V3.1 Frozen One-Shot Calibration Then Conditional Main
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v3_1-one-shot-authorization.json
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v3-1-single-shot-research-cal-and-main
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'AUTHORIZE_V3_1_CALIBRATION_AND_CONDITIONAL_MAIN_ONCE')
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject reruns and duplicate prior paid artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$GITHUB_RUN_ATTEMPT" = "1" || { echo 'Paid-run retry forbidden'; exit 2; }
+          python - <<'PY'
+          import json,os,urllib.request
+          repo=os.environ['GITHUB_REPOSITORY']
+          url='https://api.github.com/repos/'+repo+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(url,headers={
+            'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+            'Accept':'application/vnd.github+json',
+            'User-Agent':'v3-1-no-duplicate-launch'})
+          with urllib.request.urlopen(req,timeout=30) as h:
+              data=json.load(h)
+          candidates=[r for r in data.get('artifacts',[]) if
+              r.get('name','').startswith('v3_1-paid-calibration-')]
+          if candidates:
+              raise SystemExit('PRIOR_CALIBRATION_ARTIFACT_EXISTS_NO_SECOND_PAID_RUN')
+          print('New one-shot launch; no paid V3.1 calibration artifact found')
+          PY
+      - name: Verify all frozen source hashes, tests and deterministic dry-run
+        run: |
+          python -m py_compile scripts/v3_1_economic_design.py scripts/v3_1_final_readiness.py scripts/v3_1_single_shot_run.py scripts/v3_1_publish_results.py
+          python -m unittest discover -s tests -p 'test_v3_1_economic_design.py' -v
+          python scripts/v3_1_single_shot_run.py --stage mock
+      - name: Calibrate three frozen models under strict $5.70 new spend cap
+        id: calibration
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v3_1_single_shot_run.py --stage calibration
+      - name: Archive raw calibration before main launch
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3_1-paid-calibration-${{ github.run_id }}
+          path: |
+            results/private/v3_1-single-shot/calibration-responses.jsonl
+            results/private/v3_1-single-shot/calibration-report.json
+            results/private/v3_1-single-shot/spending-ledger.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Automatically run FULL main only after frozen calibration and budget pass
+        id: main
+        if: steps.calibration.outputs.go == 'true'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v3_1_single_shot_run.py --stage main
+      - name: Preserve every raw response, missing result, provider envelope and analysis
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3_1-one-shot-full-study-${{ github.run_id }}
+          path: |
+            results/private/v3_1-single-shot/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Create unfiltered public account of results even if gates fail
+        if: always()
+        run: |
+          python scripts/v3_1_publish_results.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/44-v3_1-one-shot-results.md
+          git commit -m 'Publish immutable V3.1 calibration and conditional main outcome with nulls and costs' || true
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
