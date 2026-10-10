@@ -56,6 +56,7 @@ Our primary effect and any confidence interval are valid only under the document
 - [Final offline pre-OpenRouter gate](docs/16-prepilot-final-gate.md)
 - [Author-led semantic review and neutral-control revisions](docs/17-internal-semantic-review.md)
 - [Mechanism-aware precision calibration](docs/18-precision-calibration.md)
+- [OpenRouter compatibility acceptance criteria](docs/19-compatibility-acceptance.md)
 
 We store separate source records in `data/scenarios/` and `data/pilot/`. JSON schemas describe our scenario and eventual trial records. Our scripts and CI currently **only generate and validate stimuli**. They do not make model API calls.
 
