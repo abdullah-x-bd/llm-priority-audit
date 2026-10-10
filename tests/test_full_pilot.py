@@ -1,5 +1,7 @@
 """No-network acceptance and failure-injection for the full 720-call pilot."""
 import json
+import os
+from unittest import mock
 import tempfile
 import unittest
 from collections import Counter
@@ -99,6 +101,28 @@ class CollectorTests(unittest.TestCase):
             self.assertEqual(len(b["collected"]),9)
             self.assertEqual(second.calls,4)
             self.assertEqual(len(set((r["model_id"],r["trial_id"]) for r in b["collected"])),9)
+
+    def test_manual_http400_recovery_requires_explicit_acknowledgement(self):
+        with tempfile.TemporaryDirectory() as temp:
+            out=Path(temp)
+            first=FakeFailsAfter(REF,0)
+            first.fail_at=0
+            # The mock raises an HTTP400 before any model generation occurs.
+            class BadParameter(FakeService):
+                def request(self,path,body=None):
+                    if path=="/chat/completions":
+                        raise APIProblem("HTTP_400_invalid_request")
+                    return super().request(path,body)
+            state=collect(BadParameter(REF),out,"mock")
+            self.assertEqual(len(state["collected"]),0)
+            self.assertTrue(state["status"].startswith("STOP_UNCERTAIN_CHARGE_HTTP_400"))
+            with self.assertRaisesRegex(PilotStopped,"UNCERTAIN_PRIOR_INFLIGHT"):
+                collect(FakeService(REF),out,"mock",max_requests=5)
+            with mock.patch.dict(os.environ,
+                  {"FULL_PILOT_RECOVER_HTTP400":"ACKNOWLEDGED_INVALID_REQUEST"}):
+                fixed=collect(FakeService(REF),out,"mock",max_requests=5)
+            self.assertEqual(len(fixed["collected"]),5)
+            self.assertEqual(len(fixed["rejected_attempts"]),1)
 
     def test_never_touch_main_source(self):
         _,selected=sample_plan()
