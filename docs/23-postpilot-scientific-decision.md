@@ -68,7 +68,7 @@ We preserve the complete v1 strict-authority protocol and findings, with immutab
 
 **Arm U, undirected diagnostic:** Same scenario and payoff parity, but *no* operator's action selection. Ask which action is recommended. This measures observable unconstrained preference between described actions, **not** an instruction override. It can help reveal whether the procedural Q action is salient at all, but must never be interpreted as a violation of an instruction.
 
-The offline generator `scripts/propose_instruction_variants.py` implements draft variants using the **previously seen pilot families only for review**. These 432 generated pilot variants are **not** approved confirmatory stimuli. For an independent sensitivity test, author and review new calibration families that have not been evaluated before; do **not** peek at the 60 main families' model outputs.
+The offline generator `scripts/propose_instruction_variants.py` implements draft variants using the **previously seen pilot families only for review**. These 432 generated pilot variants are **not** approved confirmatory stimuli. Six new **unreviewed and never-tested** calibration sources have now been drafted in [data/calibration-v2/draft-families.jsonl](../data/calibration-v2/draft-families.jsonl). The offline [calibration generator](../scripts/generate_calibration_v2.py) creates 72 distinct prompt variants from these six families, plus 12 empty reviewer slots, two per family. None are approved or have been submitted to model endpoints. The new calibration families require **independent review** before any paid sensitivity test; do **not** peek at the 60 main families' model outputs.
 
 A future sensitivity/calibration pilot should be counterbalanced and interleaved across models/routes. We should specify the sampling units and feasible incremental budget ahead of collection. No paid requests are launched by this document.
 
@@ -97,4 +97,4 @@ With additional approvals and sensitivity:
 
 Related methodological context includes [IHEval (NAACL 2025)](https://aclanthology.org/2025.naacl-long.425/), [Control Illusion (AAAI 2026)](https://ojs.aaai.org/index.php/AAAI/article/view/40339), and [OpenAI's IH-Challenge methodology (2026)](https://openai.com/index/instruction-hierarchy-challenge/). These works motivate careful instruction-source framing and objective scoring; they do not validate our particular task set.
 
-**Next action:** distribute the blinded packets, obtain real reviewer decisions, revise the action/control pairs as required, and validate new held-out sensitivity prompts. Retain main launch at NO-GO until all gates pass.
+**Next action:** distribute the blinded main-family packet and the separate new calibration reviewer drafts, obtain real independent reviewer decisions, revise the action/control pairs as required, and validate a prospective sensitivity design. Retain main launch at NO-GO until all gates pass.
