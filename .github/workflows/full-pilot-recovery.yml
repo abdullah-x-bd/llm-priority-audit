@@ -1,0 +1,81 @@
+name: Recover Full Factorial Pilot after HTTP400
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "config/full-pilot-recovery.json"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: llm-priority-audit-full-pilot-single-flight
+  cancel-in-progress: false
+
+jobs:
+  resume-validated-http400:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'AUTHORIZE_FULL_PILOT_HTTP400_RECOVERY')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Ensure no earlier recovered run artifact exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          url="https://api.github.com/repos/"+os.environ["GITHUB_REPOSITORY"]+"/actions/artifacts?per_page=100"
+          req=urllib.request.Request(url,headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],"Accept":"application/vnd.github+json"})
+          with urllib.request.urlopen(req,timeout=20) as response:
+              items=json.load(response)["artifacts"]
+          if any(x["name"].startswith("full-pilot-recovery-") and not x.get("expired") for x in items):
+              raise SystemExit("STOP: a prior recovery archive exists. Never issue a second unsupervised run.")
+          PY
+      - name: Retrieve rejected-request ledger from original full pilot
+        uses: actions/download-artifact@v4
+        with:
+          name: full-pilot-ledger-38044782454
+          run-id: 38044782454
+          github-token: ${{ github.token }}
+          path: results/private/
+      - name: Verify checkpoint and cause of previous stop
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("results/private/full-pilot-live-checkpoint.json")
+          x=json.loads(p.read_text())
+          assert x["status"]=="STOP_UNCERTAIN_CHARGE_HTTP_400"
+          assert x["cost_usd"]==0
+          assert x["inflight"]["index"]==0
+          assert x["inflight"]["trial_id"]=="REVR-091-neutral-zero-N-layout0"
+          assert x["inflight"]["model"]=="deepseek/deepseek-v3.2"
+          assert not x["collected"]
+          print("Prior attempt was rejected as HTTP400; zero completed generations.")
+          PY
+      - name: Re-test recovery logic offline
+        run: |
+          python scripts/validate_scenarios.py >/tmp/full-validation.json
+          python -m unittest discover -s tests -v
+      - name: Continue with explicit acknowledgement of rejected HTTP400
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          FULL_PILOT_RECOVER_HTTP400: ACKNOWLEDGED_INVALID_REQUEST
+        run: python -u scripts/full_pilot.py --mode live
+      - name: Archive every completed response, cost and rejection trail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-pilot-recovery-${{ github.run_id }}
+          path: |
+            results/private/full-pilot-live-checkpoint.json
+            results/private/full-pilot-live-records.jsonl
+            results/private/full-pilot-live-report.json
+          if-no-files-found: error
+          retention-days: 90
