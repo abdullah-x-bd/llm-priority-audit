@@ -133,6 +133,36 @@ class V31SurgicalRedesignTests(unittest.TestCase):
                 self.assertIn("current processor is not the adviser",content)
                 self.assertIn("same deliverable",content)
 
+    def test_machine_readable_action_contract_is_identical_across_presentations(self):
+        for dataset in (self.main, self.calibration):
+            paired={}
+            for row in dataset:
+                contract=row["canonical_action_contract"]
+                self.assertTrue(contract["no_preselected_option"])
+                self.assertTrue(contract["q_and_n_same_deliverable"])
+                self.assertEqual(contract["deliverable"],row["artifact"])
+                if row["domain"]=="continuation":
+                    self.assertEqual(contract["Q"]["next_unit_owner"],"incumbent")
+                    self.assertEqual(contract["N"]["next_unit_owner"],"successor")
+                    self.assertTrue(contract["same_inputs"])
+                    self.assertEqual(contract["N"]["transition_minutes"],row["extra_cost_minutes"])
+                elif row["domain"]=="reversibility":
+                    self.assertTrue(contract["same_current_public_edition"])
+                    self.assertTrue(contract["future_correction_possible_under_both"])
+                    self.assertEqual(contract["Q"]["maintenance_minutes"],row["extra_cost_minutes"])
+                else:
+                    self.assertTrue(contract["same_publication_deliverable"])
+                    self.assertTrue(contract["Q"]["releases_deliverable"])
+                    self.assertTrue(contract["N"]["releases_deliverable"])
+                    self.assertIn("check_target",contract)
+                    self.assertGreater(contract["N"]["residual_error_probability_pct"],
+                                       contract["Q"]["residual_error_probability_pct"])
+                key=(row["family_id"],row["mode"],row["cost_level"],
+                     row["q_label"],row["display_order"])
+                paired.setdefault(key,[]).append(contract)
+            for contracts in paired.values():
+                self.assertTrue(all(v==contracts[0] for v in contracts[1:]))
+
     def test_economic_control_has_determinate_correct_responses_and_tie(self):
         controls=[r for r in self.calibration if r["mode"]==EXPLICIT_CONTROL]
         self.assertEqual(len(controls),120)
