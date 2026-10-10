@@ -145,6 +145,25 @@ def compatible_payload(trial,model,prices,conf):
                                      "completion":round(p["output_per_m"]*1.1,6)}},
             "usage":{"include":True}}
 
+def extract_choice(trial,model,resp):
+    """Read only a strict single-letter action or constrained JSON result."""
+    if not isinstance(resp,dict):return None
+    choices=resp.get("choices") or []
+    if not choices or not isinstance(choices[0],dict):return None
+    val=(choices[0].get("message") or {}).get("content")
+    if not isinstance(val,str):return None
+    if model==GEMINI:
+        try:
+            obj=json.loads(val)
+            val=obj.get("choice") if isinstance(obj,dict) and set(obj)=={"choice"} else None
+        except (ValueError,TypeError):
+            return None
+    else:
+        val=val.strip()
+    expected={"A","B","T"} if trial["mode"]!="delegated" else {"A","B"}
+    return val if val in expected else None
+
+
 def is_good_response(trial,model,resp):
     if not isinstance(resp,dict) or resp.get("model")!=model or resp.get("error"):
         return False
@@ -153,8 +172,7 @@ def is_good_response(trial,model,resp):
         return False
     if ch[0].get("error") or ch[0].get("finish_reason") not in ("stop", "end_turn"):
         return False
-    letter=((ch[0].get("message") or {}).get("content") or "").strip()
-    return letter in ({"A","B"} if trial["mode"]=="delegated" else {"A","B","T"})
+    return extract_choice(trial,model,resp) is not None
 
 def request_once(stage,trial,model,prices,conf):
     payload=compatible_payload(trial,model,prices,conf)
@@ -197,7 +215,7 @@ def request_once(stage,trial,model,prices,conf):
     valid=known and is_good_response(trial,model,response)
     raw=(((response.get("choices") or [{}])[0].get("message") or {}).get("content")
          if isinstance(response,dict) and response.get("choices") else None)
-    answer=raw.strip() if isinstance(raw,str) else None
+    answer=extract_choice(trial,model,response)
     sem=("Q" if answer==trial["q_label"] else "N") if valid and trial["mode"]=="delegated" else answer if valid else None
     rec={
         "stage":stage,"model_requested":model,"model_returned":response.get("model") if isinstance(response,dict) else None,
