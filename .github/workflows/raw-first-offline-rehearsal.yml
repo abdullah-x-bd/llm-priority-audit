@@ -1,0 +1,77 @@
+name: Rehearse Raw-First Recovery Offline
+on:
+  push:
+    branches: [main]
+    paths: ["config/raw-first-rehearsal.json"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  dry-run-original-checkpoint:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'REHEARSE_RAW_FIRST_NO_PAID_CALLS')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fetch exact prior 584-trial checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: full-pilot-fast-38050278864
+          run-id: 38050278864
+          github-token: ${{ github.token }}
+          path: results/private/
+      - name: Validate recovery on real archive using mock-only transport
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from unittest.mock import patch
+          import sys
+          sys.path.insert(0,"scripts")
+          from full_pilot import collect,FakeService,PLAN_FILE,BUDGET
+          root=Path("results/private")
+          path=root/"full-pilot-live-checkpoint.json"
+          prior=json.loads(path.read_text())
+          assert len(prior["collected"])==584
+          assert prior["inflight"]["index"]==584
+          assert prior["inflight"]["trial_id"]=="REVR-091-priority-negative-N-layout0"
+          assert prior["status"]=="STOP_UNINTERPRETABLE_BILLING_OR_MODEL_MODEL_RETURNED_DIFFERENT_IDENTIFIER"
+          assert prior["unaccepted_response"]["generation_id"]=="gen-1791634018-280gEOYeF0HxtHNfahTm"
+          assert prior["unaccepted_response"]["returned_model"] is None
+          assert prior["unaccepted_response"]["usage_cost_usd"] is None
+          before=prior["collected"][:]
+          with patch.dict(os.environ,{
+              "FULL_PILOT_RAW_FIRST":"1",
+              "FULL_PILOT_RECOVER_LEGACY_INCOMPLETE":"ACKNOWLEDGE_AND_SKIP_UNBILLED_UNKNOWN"}):
+              with patch("full_pilot.time.sleep"):
+                  out=collect(FakeService(json.loads(PLAN_FILE.read_text())),
+                              root,"live",max_requests=592)
+          assert len(out["collected"])==592, len(out["collected"])
+          assert out["collected"][:584]==before
+          assert out["collected"][584]["attempt_status"]=="provider_error"
+          assert out["collected"][584]["settings_json"] is None
+          assert len(out["raw_events"])==7
+          assert out["raw_events"][0]["index"]==585
+          assert out["recovery_events"][-1]["raw_response_available"] is False
+          assert len(out["rejected_attempts"])==len(prior["rejected_attempts"])+1
+          assert out["cost_usd"]+out["unresolved_rejection_reserve_usd"]+.00063746<BUDGET
+          print(json.dumps({"result":"PASSED_OFFLINE",
+              "original_records":584,"preserved_original":True,
+              "legacy_unresolved_cell":585,"next_mock_only_cells":7,
+              "raw_responses_archived_from_index":585,
+              "billable_api_calls":0}))
+          PY
+      - name: Verify offline posthoc reader recognizes legacy coverage limits
+        run: |
+          python scripts/posthoc_pilot.py --input results/private/full-pilot-live-checkpoint.json --output results/private/raw-first-offline-analysis.json
+      - name: Archive rehearsal report only, not altered source checkpoint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-first-rehearsal-${{ github.run_id }}
+          path: results/private/raw-first-offline-analysis.json
+          if-no-files-found: warn
+          retention-days: 30
