@@ -33,6 +33,12 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Assumption-only precision simulator smoke test
         run: python scripts/precision_simulation.py --replications 100 > /tmp/precision-planning.json
+      - name: Mechanism clustering and pricing stress tests (offline)
+        run: |
+          python scripts/precision_mechanism_sensitivity.py > /tmp/cluster-sensitivity.json
+          python scripts/budget_stress.py > /tmp/budget-stress.json
+      - name: Pre-pilot go/no-go evidence (report only; independent review remains pending)
+        run: python scripts/prepilot_gate.py > /tmp/prepilot-gate.json
       - name: Render manifest without external API calls
         run: |
           python scripts/expand_design.py --phase main --output /tmp/main-manifest.jsonl

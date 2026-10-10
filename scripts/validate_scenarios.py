@@ -8,7 +8,7 @@ import re
 import sys
 from expand_design import (
     DOMAINS, FRAMES, LEVELS, DIRECTIVES, LAYOUTS,
-    load_families, layout_assignment, build_manifest, display_mapping,
+    ROOT, load_families, layout_assignment, build_manifest, display_mapping,
     SYSTEM_MESSAGE, COMMON_OUTCOME
 )
 
@@ -22,9 +22,9 @@ PAYOFF_FIELDS = {"q_quality", "n_quality", "q_extra_cost", "n_extra_cost"}
 EXPECTED_FAMILIES = {"main": 20, "pilot": 2}
 EXTRA_COST = 0
 
-def audit(phase):
+def audit(phase, root=ROOT):
     errors = []
-    families = load_families(phase)
+    families = load_families(phase, root=root)
     by_domain = collections.Counter(f.get("domain") for f in families)
     for d in DOMAINS:
         if by_domain[d] != EXPECTED_FAMILIES[phase]:
@@ -34,6 +34,7 @@ def audit(phase):
         if len(set(vals)) != len(vals):
             errors.append(f"Duplicate {field}")
     mechanism_counts = collections.defaultdict(set)
+    repeated_mechanisms = collections.Counter()
     for f in families:
         fid = f.get("family_id", "UNKNOWN")
         if set(f) != REQUIRED:
@@ -42,6 +43,7 @@ def audit(phase):
             errors.append(f"{fid}: unknown domain")
             continue
         mechanism_counts[f["domain"]].add(f.get("mechanism"))
+        repeated_mechanisms[(f["domain"], f.get("mechanism"))] += 1
         if re.fullmatch(PREFIX[f["domain"]] + r"-\d{3}", fid) is None:
             errors.append(f"{fid}: wrong ID")
         if len(f.get("title", "")) < 10 or len(f.get("context", "")) < 50:
@@ -80,7 +82,11 @@ def audit(phase):
         expected = 5 if phase == "main" else 2
         if len(mechanism_counts[domain]) != expected:
             errors.append(f"{domain}: expected {expected} distinct mechanisms, found {len(mechanism_counts[domain])}")
-    trials = build_manifest(phase)
+    expected_each_mechanism = 4 if phase == "main" else 1
+    for (domain, mechanism), n in repeated_mechanisms.items():
+        if n != expected_each_mechanism:
+            errors.append(f"{domain}/{mechanism}: found {n} contexts; expected {expected_each_mechanism}")
+    trials = build_manifest(phase, root=root)
     if len(trials) != len(families) * 24:
         errors.append("Incorrect number of factorial variants")
     if len({t["trial_id"] for t in trials}) != len(trials):
