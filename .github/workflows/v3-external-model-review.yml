@@ -85,6 +85,8 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add docs/33-v3-external-model-review-archive.md docs/34-v3-external-review-accounting.json
             git commit -m "Archive actual v3 frontier and Claude scenario reviewer responses and spending" || true
+            git fetch origin main
+            git rebase origin/main
             git push origin HEAD:main
           else
             echo 'No authenticated external review output found. Do not fabricate publication.'
