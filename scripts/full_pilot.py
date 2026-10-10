@@ -383,16 +383,32 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
                 break
         if state["status"].startswith("STOP_"):
             break
-        # Persist mismatched response provenance BEFORE strict validation.
-        # This prevents another ambiguous model revision from disappearing.
-        if isinstance(response,dict) and response.get("model")!=model:
-            state["unaccepted_response"]={
-                "expected_model":model,"returned_model":response.get("model"),
-                "generation_id":response.get("id"),
-                "usage_cost_usd":(response.get("usage") or {}).get("cost"),
-                "response_content":((response.get("choices") or [{}])[0].get("message") or {}).get("content"),
-                "trial_id":trial["trial_id"],"recorded_utc":now()}
-            save(checkpoint,state)
+        # Preserve a small safe envelope whenever HTTP 200 is not a complete,
+        # correctly attributed success. Never call it model substitution merely
+        # because the "model" property is absent.
+        if isinstance(response,dict):
+            choice=(response.get("choices") or [{}])
+            first_choice=choice[0] if isinstance(choice,list) and choice and isinstance(choice[0],dict) else {}
+            usage=response.get("usage") if isinstance(response.get("usage"),dict) else {}
+            error=response.get("error")
+            malformed=(response.get("model")!=model or error is not None or
+                       first_choice.get("error") is not None or
+                       first_choice.get("finish_reason")=="error" or
+                       not isinstance(response.get("choices"),list) or not usage)
+            if malformed:
+                state["unaccepted_response"]={
+                    "expected_model":model,"returned_model":response.get("model"),
+                    "generation_id":response.get("id"),
+                    "usage_cost_usd":usage.get("cost"),
+                    "response_content_type":type((first_choice.get("message") or {}).get("content")).__name__,
+                    "response_shape_keys":sorted(str(x) for x in response.keys())[:30],
+                    "error_present":error is not None,
+                    "error_code":str(error.get("code",""))[:80] if isinstance(error,dict) else None,
+                    "error_message":str(error.get("message",""))[:160] if isinstance(error,dict) else None,
+                    "choice_error_present":first_choice.get("error") is not None,
+                    "finish_reason":first_choice.get("finish_reason"),
+                    "trial_id":trial["trial_id"],"recorded_utc":now()}
+                save(checkpoint,state)
         try:
             res=parse_completion(response,model,trial)
         except PilotStopped as ex:
