@@ -21,7 +21,7 @@ jobs:
       - name: Fetch successful 720-cell artifact
         uses: actions/download-artifact@v4
         with:
-          name: full-pilot-fallback-${{ github.event.workflow_run.id }}
+          name: full-pilot-atlas-${{ github.event.workflow_run.id }}
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
           path: results/private/
