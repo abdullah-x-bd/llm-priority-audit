@@ -1,0 +1,49 @@
+name: Investigate 261st Model Identifier
+on:
+  push:
+    branches: [main]
+    paths: ["config/investigate-model-261.json"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  metadata-only:
+    if: contains(github.event.head_commit.message, 'VERIFY_DEEPSEEK_MODEL_REVISION_261')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: full-pilot-atlas-38047792865
+          run-id: 38047792865
+          github-token: ${{ github.token }}
+          path: results/private/
+      - name: Inspect last AtlasCloud DeepSeek generation metadata with GET only
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          python - <<'PY'
+          import collections,json,os,re,urllib.request,time
+          from pathlib import Path
+          p=Path("results/private/full-pilot-live-records.jsonl")
+          rows=[json.loads(x) for x in p.read_text().splitlines() if x]
+          deep=[x for x in rows if x["model_id"]=="deepseek/deepseek-v3.2"]
+          print("STORED_RECORDS",len(rows),"DEEPSEEK_RECORDS",len(deep))
+          tally=collections.Counter()
+          for r in deep[-12:]:
+              gen=re.search(r"generation_id=([^;]+)",r.get("notes",""))
+              if not gen:continue
+              url="https://openrouter.ai/api/v1/generation?id="+gen.group(1)
+              request=urllib.request.Request(url,headers={"Authorization":"Bearer "+os.environ["OPENROUTER_API_KEY"],"Accept":"application/json"})
+              with urllib.request.urlopen(request,timeout=30) as reply:
+                  meta=json.load(reply).get("data",{})
+              tally[(meta.get("provider_name"),meta.get("model"))]+=1
+              print(json.dumps({"trial":r["trial_id"],"provider":meta.get("provider_name"),
+                "revision":meta.get("model"),"recorded_cost":r["billed_cost_usd"],
+                "generation_cost":meta.get("total_cost")}))
+              time.sleep(.2)
+          print("PROVIDER_REVISION_COUNTS",json.dumps({str(k):v for k,v in tally.items()}))
+          PY
