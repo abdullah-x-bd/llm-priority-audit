@@ -1,0 +1,82 @@
+name: V3.1 Minimal Gemini Compatibility Probe
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v3_1-compatibility-probe.json
+permissions:
+  contents: write
+concurrency:
+  group: v3-1-gemini-compatibility-once
+  cancel-in-progress: false
+jobs:
+  probe:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'PROBE_V3_1_GEMINI_COMPATIBILITY_ONCE')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Read model reasoning contract, try at most TWO tiny Gemini requests
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          python - <<'PY'
+          import os,json,urllib.request,urllib.error,datetime
+          from pathlib import Path
+          from scripts.v3_1_economic_design import build
+          token=os.environ['OPENROUTER_API_KEY']
+          headers={'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/json'}
+          root='https://openrouter.ai/api/v1'
+          def call(path,payload=None):
+              req=urllib.request.Request(root+path,headers=headers,method='GET' if payload is None else 'POST',
+                  data=None if payload is None else json.dumps(payload).encode())
+              try:
+                  with urllib.request.urlopen(req,timeout=40) as r:return r.status,json.load(r)
+              except urllib.error.HTTPError as e:
+                  try:x=json.loads(e.read(3000))
+                  except Exception:x={'error':'unparseable'}
+                  return e.code,x
+          catalog=call('/models')[1]
+          g=next(x for x in catalog['data'] if x['id']=='google/gemini-3.5-flash-lite')
+          fields={k:g.get(k) for k in ['id','supported_parameters','reasoning','top_provider','default_parameters']}
+          trial=next(r for r in build('calibration') if r['mode']=='delegated')
+          base={'model':'google/gemini-3.5-flash-lite','messages':[
+            {'role':'system','content':trial['system_message']},
+            {'role':'user','content':trial['user_message']}],
+            'max_tokens':128,'provider':{'allow_fallbacks':False,'sort':'price','max_price':{'prompt':0.33,'completion':2.75}},
+            'usage':{'include':True}}
+          attempts=[]
+          for name,extra in [
+              ('omit_reasoning_and_temperature',{}),
+              ('explicit_low_reasoning',{'reasoning':{'effort':'minimal'}}),
+          ]:
+              if attempts and attempts[-1]['http_status']==200:break
+              status,result=call('/chat/completions',{**base,**extra})
+              err=result.get('error')
+              if isinstance(err,dict):err={'code':err.get('code'),'message':str(err.get('message',''))[:450]}
+              entry={'name':name,'http_status':status,'error':err,
+                  'returned_model':result.get('model'),
+                  'response_content':str((((result.get('choices') or [{}])[0].get('message') or {}).get('content')))[:100],
+                  'usage':result.get('usage')}
+              attempts.append(entry)
+              print(json.dumps(entry))
+          report={'catalog_fields':fields,'attempts':attempts,'probe_max_calls':2,
+                  'outcome':'COMPATIBLE' if any(x['http_status']==200 and x['returned_model']==base['model'] for x in attempts) else 'NO_COMPATIBLE_VARIANT',
+                  'note':'Diagnostic request only; not part of research calibration.'}
+          Path('docs/46-v3_1-gemini-compatibility.json').write_text(json.dumps(report,indent=2)+'\n')
+          PY
+      - name: Publish compatibility result, never rerun diagnostic automatically
+        if: always()
+        run: |
+          if [ -f docs/46-v3_1-gemini-compatibility.json ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add docs/46-v3_1-gemini-compatibility.json
+            git commit -m 'Record actual Gemini V3.1 transport compatibility and reason for HTTP 400' || true
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
