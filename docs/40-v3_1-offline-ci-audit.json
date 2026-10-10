@@ -12,7 +12,7 @@
     "signed_human_reviews": 0,
     "authorized_paid_calls": 0,
     "inference_calls_performed": 0,
-    "manifest_sha256": "d4d77f58f6644724b568b3488b75fa8b81be4c83ae1542ce2d7fde1990b6b052",
+    "manifest_sha256": "005384136db7198907b2c2c539aa0c359afb3d20c18e7302a7d832ef835d28f1",
     "status": "OFFLINE_CANDIDATE_BLOCKED_PENDING_SEMANTIC_AND_ECONOMIC_REVIEW"
   },
   "calibration": {
@@ -27,7 +27,7 @@
     "signed_human_reviews": 0,
     "authorized_paid_calls": 0,
     "inference_calls_performed": 0,
-    "manifest_sha256": "95a0b930bf6d2b770f76a7dc390982ca36794394589f21cc9a0c5091e71c35fe",
+    "manifest_sha256": "0983742b3005927196f46a1d2c12f49a6d17b9eac4dd926b2b70925ec52cf181",
     "status": "OFFLINE_CANDIDATE_BLOCKED_PENDING_SEMANTIC_AND_ECONOMIC_REVIEW"
   },
   "external_human_review_completed": false,
