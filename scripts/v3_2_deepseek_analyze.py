@@ -181,6 +181,7 @@ def publish(summary,ledger):
         "- Prospective new study registration: config/v3_2-deepseek-exploratory-freeze.json.",
         "- Historical three-model failed calibration: docs/48-v3_1-calibration-postmortem.md.",
         "- Full machine-readable findings: docs/50-v3_2-deepseek-exploratory-analysis.json.",
+        "- Permanent row-level outcomes, including missingness: results/public/v3_2-deepseek-main-cells.jsonl.",
         ""]
     REPORT.write_text("\n".join(lines)+"\n",encoding="utf-8")
 
@@ -208,6 +209,27 @@ def main():
     ledger=json.loads((DEST/"ledger.json").read_text()) if (DEST/"ledger.json").exists() else {
         "status":"NOT_STARTED","known_new_usd":0.0,"held_unknown_usd":0.0}
     summary=analyze(records,manifest)
+    # Preserve a permanent non-secret, single-row-per-cell archive in the repo.
+    raw_by={r["trial_id"]:r for r in records}
+    permanent=ROOT/"results"/"public"/"v3_2-deepseek-main-cells.jsonl"
+    permanent.parent.mkdir(parents=True,exist_ok=True)
+    with permanent.open("w",encoding="utf-8") as h:
+        for trial in manifest:
+            r=raw_by.get(trial["trial_id"])
+            h.write(json.dumps({
+                "protocol_id":summary["protocol_id"],
+                "trial_id":trial["trial_id"],"family_id":trial["family_id"],
+                "domain":trial["domain"],"mechanism":trial["mechanism"],
+                "cost_level":trial["cost_level"],"presentation":trial["presentation"],
+                "q_label":trial["q_label"],"display_order":trial["display_order"],
+                "request_sha256":trial["request_sha256"],
+                "status":"NOT_ATTEMPTED" if r is None else ("VALID" if r["valid"] else "INVALID"),
+                "selected_label":r.get("selected_label") if r else None,
+                "selected_canonical":r.get("selected_canonical") if r else None,
+                "cost_usd":r.get("cost_usd") if r else None,
+                "validation_problem":r.get("validation_problem") if r else None,
+                "transport_error":r.get("transport_error") if r else None
+            },ensure_ascii=False,sort_keys=True)+"\n")
     MACHINE.write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     publish(summary,ledger)
     print(json.dumps({"status":ledger["status"],"attempted":summary["attempted"],
