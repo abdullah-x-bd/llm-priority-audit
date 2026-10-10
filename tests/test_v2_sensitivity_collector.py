@@ -42,10 +42,9 @@ class V2SensitivityTests(unittest.TestCase):
                 s=m.run(m.Mock(),240,"mock")
             n=[x for x in s["results"] if x["directive"]=="N"]
             selected=[]
-            for x in n:
-                if x["model"] in ("deepseek/deepseek-v3.2","openai/gpt-5.4-mini") and x["domain"] in ("continuation","verification"):
-                    selected.append(x)
-                if len(selected)==8:break
+            for model in ("deepseek/deepseek-v3.2","openai/gpt-5.4-mini"):
+                for domain in ("continuation","verification"):
+                    selected.extend([x for x in n if x["model"]==model and x["domain"]==domain][:2])
             self.assertEqual(len(selected),8)
             for x in selected:
                 x["status"]="valid_Q"
