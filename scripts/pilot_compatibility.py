@@ -53,6 +53,8 @@ class Transport:
             headers["Authorization"]="Bearer "+self.key
         if body is not None:
             headers["Content-Type"]="application/json"
+            # Request sanitized routing diagnostics on provider-side failures.
+            headers["X-OpenRouter-Metadata"]="enabled"
         data=None if body is None else json.dumps(body,sort_keys=True).encode("utf-8")
         request=urllib.request.Request(ORIGIN+path,headers=headers,data=data,
                                        method="POST" if body is not None else "GET")
@@ -155,13 +157,24 @@ def make_reservation(trial,price):
 def parse_completion(answer, expected_model, trial):
     if not isinstance(answer,dict):
         raise PilotStopped("COMPLETION_OBJECT_MISSING")
+    # OpenRouter can return HTTP 200 containing a failed generation envelope.
+    # These are NOT evidence of another model being substituted. Detect them
+    # before comparing identifiers or attempting to classify A/B responses.
+    error=answer.get("error")
+    if error is not None:
+        raise PilotStopped("HTTP200_UPSTREAM_ERROR_ENVELOPE")
+    choices=answer.get("choices")
+    if isinstance(choices,list) and choices and isinstance(choices[0],dict):
+        if choices[0].get("error") is not None or choices[0].get("finish_reason")=="error":
+            raise PilotStopped("HTTP200_UPSTREAM_CHOICE_ERROR")
     returned=answer.get("model")
+    if not isinstance(returned,str) or not returned:
+        raise PilotStopped("HTTP200_INCOMPLETE_MISSING_MODEL")
     if returned != expected_model:
         raise PilotStopped("MODEL_RETURNED_DIFFERENT_IDENTIFIER")
     usage=answer.get("usage")
     if not isinstance(usage,dict) or _positive_number(usage.get("cost")) is None:
         raise PilotStopped("BILLING_USAGE_COST_MISSING")
-    choices=answer.get("choices")
     if not isinstance(choices,list) or not choices or not isinstance(choices[0],dict):
         raise PilotStopped("CHOICES_MISSING")
     msg=choices[0].get("message") or {}
