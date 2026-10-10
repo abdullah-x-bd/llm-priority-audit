@@ -29,8 +29,8 @@ jobs:
                   'Accept':'application/vnd.github+json',
                   'User-Agent':'v3-1-status-probe'})
               with urllib.request.urlopen(req,timeout=30) as r:return json.load(r)
-          runs=get('/actions/workflows/v3_1-one-shot-study.yml/runs?per_page=8')['workflow_runs']
-          out=['# V3.1 live one-shot launch status (read only)','',
+          runs=get('/actions/workflows/v3_1-resume-dispatch.yml/runs?per_page=8')['workflow_runs']
+          out=['# V3.1 resumed one-shot launch status (read only)','',
               'No OpenRouter calls in this status probe.','']
           for r in runs[:3]:
               out+=['## Run '+str(r['id'])+'  '+str(r['status'])+'  '+str(r.get('conclusion')),
