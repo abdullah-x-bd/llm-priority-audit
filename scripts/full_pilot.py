@@ -21,6 +21,7 @@ from expand_design import ROOT, build_manifest
 from pilot_compatibility import (Transport, PilotStopped, APIProblem, key_preflight,
     live_model_prices, make_reservation, parse_completion, MAX_TOKENS)
 from research_pipeline import validate_row, validate_collection, write_records
+from raw_capture import raw_event, unresolved_trial, cost_from_response
 
 PLAN_FILE=ROOT/"config"/"pricing-assumptions.json"
 AUTH_FILE=ROOT/"config"/"full-pilot-authorization.json"
@@ -289,6 +290,7 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
                "cost_usd":0.0,"plan_size":len(sequence),"created_utc":now()}
         save(checkpoint,state)
     records=state["collected"]
+    raw_first=(mode=="live" and os.environ.get("FULL_PILOT_RAW_FIRST")=="1")
     # Replay every previously logged row against today's exact manifest to
     # protect against changed source stimuli across an interrupted run.
     expected=[(m,t["trial_id"],t["request_sha256"]) for m,t in sequence]
@@ -313,6 +315,7 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
     state["status"]="running";save(checkpoint,state)
     for index in range(len(records),stop_at):
         model,trial=sequence[index]
+        recorded_unresolved=False
         reserve=make_reservation(trial,prices[model])
         if STAGE1_COST+spent+unknown_reserve+reserve>BUDGET+1e-10:
             state["status"]="STOP_BUDGET_RESERVATION"
@@ -378,11 +381,44 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
                     time.sleep(delay)
                     retries+=1
                     continue
+                if raw_first:
+                    # Never retry an ambiguous request. Reserve its possible
+                    # cost, save a failure row, and continue to another cell.
+                    failed=unresolved_trial(model,trial,payload,str(ex),
+                        status="provider_error" if
+                        (ex.http_status is not None or str(ex).startswith("HTTP_"))
+                        else "transport_failure")
+                    validate_row(failed,"pilot",{trial["trial_id"]:trial})
+                    state.setdefault("raw_events",[]).append(raw_event(
+                        index,model,trial,payload,error={
+                            "type":"http_error" if failed["attempt_status"]=="provider_error"
+                                   else "network_or_response_error",
+                            "reason":str(ex)[:160],
+                            "status":ex.http_status},reservation=reserve))
+                    state.setdefault("rejected_attempts",[]).append({
+                        "reason":str(ex),"inflight":dict(state["inflight"]),
+                        "disposition":"Unresolved request retained as failed pilot cell, not an A/B outcome",
+                        "acknowledged_utc":now()})
+                    unknown_reserve+=reserve
+                    state["unresolved_rejection_reserve_usd"]=round(unknown_reserve,8)
+                    records.append(failed)
+                    state["inflight"]=None
+                    state["status"]="running"
+                    save(checkpoint,state)
+                    recorded_unresolved=True
+                    break
                 state["status"]="STOP_UNCERTAIN_CHARGE_"+str(ex)
                 save(checkpoint,state)
                 break
+        if recorded_unresolved:
+            continue
         if state["status"].startswith("STOP_"):
             break
+        # Save the untouched response BEFORE any parsing or identity checks.
+        if raw_first:
+            state.setdefault("raw_events",[]).append(raw_event(
+                index,model,trial,payload,response=response,reservation=reserve))
+            save(checkpoint,state)
         # Preserve a small safe envelope whenever HTTP 200 is not a complete,
         # correctly attributed success. Never call it model substitution merely
         # because the "model" property is absent.
@@ -412,6 +448,31 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
         try:
             res=parse_completion(response,model,trial)
         except PilotStopped as ex:
+            if raw_first:
+                # Keep the response and its generation identifier; its
+                # scientific classification happens only after collection.
+                raw_cost=cost_from_response(response)
+                if raw_cost is not None and raw_cost>reserve:
+                    state["status"]="STOP_CHARGE_EXCEEDS_RESERVATION"
+                    save(checkpoint,state)
+                    break
+                failure=unresolved_trial(model,trial,payload,str(ex),response=response)
+                validate_row(failure,"pilot",{trial["trial_id"]:trial})
+                if raw_cost is None:
+                    unknown_reserve+=reserve
+                    state.setdefault("rejected_attempts",[]).append({
+                        "reason":str(ex),"inflight":dict(state["inflight"]),
+                        "disposition":"HTTP200 response archived raw; no reliable billed cost or choice",
+                        "acknowledged_utc":now()})
+                    state["unresolved_rejection_reserve_usd"]=round(unknown_reserve,8)
+                else:
+                    spent+=raw_cost
+                    state["cost_usd"]=round(spent,9)
+                records.append(failure)
+                state["inflight"]=None
+                state["status"]="running"
+                save(checkpoint,state)
+                continue
             state["status"]="STOP_UNINTERPRETABLE_BILLING_OR_MODEL_"+str(ex)
             save(checkpoint,state)
             break
@@ -446,12 +507,23 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
             state["status"]="STOP_NO_PROVIDER_PROVENANCE"
             break
     else:
-        state["status"]="finished" if len(records)==len(sequence) else "PARTIAL_EXPLICIT_TEST"
+        if len(records)==len(sequence):
+            unresolved=sum(r["attempt_status"] not in ("valid_Q","valid_N",
+                         "invalid_refusal","invalid_format","uninterpretable") for r in records)
+            state["status"]="finished_with_unresolved_responses" if unresolved else "finished"
+        else:
+            state["status"]="PARTIAL_EXPLICIT_TEST"
     state["last_updated_utc"]=now()
     save(checkpoint,state)
     write_records(records_path,records)
     report=build_report(records,sequence)
     report["status"]=state["status"]
+    report["raw_capture_event_count"]=len(state.get("raw_events",[]))
+    report["raw_capture_available_from_index"]=(
+        state.get("raw_events",[{}])[0].get("index") if state.get("raw_events") else None)
+    report["unresolved_response_count"]=sum(
+        r["attempt_status"] in ("provider_error","transport_failure","not_attempted")
+        for r in records)
     report["full_pilot_reported_cost_usd"]=state["cost_usd"]
     report["all_pilot_reported_cost_usd"]=round(STAGE1_COST+state["cost_usd"],9)
     report["unresolved_rejection_reserve_usd"]=round(
@@ -460,9 +532,9 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
     report["remaining_local_pilot_usd"]=round(BUDGET-STAGE1_COST-
         state["cost_usd"]-report["unresolved_rejection_reserve_usd"],9)
     report["checked_utc"]=now()
-    if state["status"]=="finished":
+    if state["status"] in ("finished","finished_with_unresolved_responses"):
         report["canonical_validation"]=validate_collection(records,"pilot")
-        if not report["canonical_validation"]["complete"]:
+        if not report["canonical_validation"]["complete"] and state["status"]=="finished":
             state["status"]="STOP_INCOMPLETE_FINAL_SCHEMA"
             report["status"]=state["status"]
             save(checkpoint,state)
@@ -488,7 +560,7 @@ def main():
         print(json.dumps({"mode":args.mode,"status":state["status"],
               "collected":len(state["collected"]),"pilot_cost_usd":state["cost_usd"],
               "stage1_cost_usd":STAGE1_COST,"overall_limit_usd":BUDGET}),flush=True)
-        return 0 if state["status"] in ("finished","PARTIAL_EXPLICIT_TEST") else 2
+        return 0 if state["status"] in ("finished","finished_with_unresolved_responses","PARTIAL_EXPLICIT_TEST") else 2
     except PilotStopped as e:
         print(json.dumps({"mode":args.mode,"status":"BLOCKED",
                           "reason":str(e),"no_automatic_retry":True}),flush=True)
