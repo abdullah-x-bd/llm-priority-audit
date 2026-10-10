@@ -210,26 +210,76 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
             raise PilotStopped("CHECKPOINT_PROTOCOL_MISMATCH")
         if state.get("inflight"):
             error=str(state.get("status",""))
-            rejected400=(os.environ.get("FULL_PILOT_RECOVER_HTTP400")=="ACKNOWLEDGED_INVALID_REQUEST" and
-                error.startswith("STOP_UNCERTAIN_CHARGE_HTTP_400") and
-                state["inflight"].get("index")==len(state.get("collected",[])))
-            rejected429=(os.environ.get("FULL_PILOT_RECOVER_HTTP429")=="ACKNOWLEDGED_RATE_LIMIT" and
-                error.startswith("STOP_UNCERTAIN_CHARGE_HTTP_429") and
-                state["inflight"].get("index")==len(state.get("collected",[])))
-            if rejected400 or rejected429:
-                # A documented HTTP 400 validation rejection or HTTP 429 rate
-                # limitation produced no completed generation; recovery requires
-                # a separate explicit approval, never silent automatic retries.
+            # A separate priced diagnostic may replace an interrupted trial
+            # only if it used the identical immutable pilot request, the same
+            # intended model, a verified provider route, and known billing.
+            probe_path=os.environ.get("FULL_PILOT_RECONCILE_PROBE","")
+            reconciled=False
+            if (probe_path and error.startswith(
+                  "STOP_UNINTERPRETABLE_BILLING_OR_MODEL_MODEL_RETURNED_DIFFERENT_IDENTIFIER")):
+                probe=json.loads(Path(probe_path).read_text(encoding="utf-8"))
+                ix=state["inflight"].get("index")
+                if ix!=len(state["collected"]) or ix>=len(sequence):
+                    raise PilotStopped("PROBE_CHECKPOINT_INDEX_MISMATCH")
+                pm,pt=sequence[ix]
+                if not (probe.get("requested_model")==pm and
+                        probe.get("returned_model")==pm and
+                        probe.get("trial_id")==pt["trial_id"] and
+                        probe.get("request_sha256")==pt["request_sha256"] and
+                        probe.get("provider_expected")=="AtlasCloud" and
+                        probe.get("settings",{}).get("model")==pm and
+                        probe.get("settings",{}).get("provider",{}).get("only")==["AtlasCloud"] and
+                        probe.get("settings",{}).get("provider",{}).get("allow_fallbacks") is False and
+                        probe.get("settings",{}).get("max_tokens")==MAX_TOKENS):
+                    raise PilotStopped("PROBE_IDENTITY_OR_SETTINGS_MISMATCH")
+                from_probe={"id":probe.get("completion_id"),"model":pm,
+                            "choices":[{"message":{"content":probe.get("content")}}],
+                            "usage":probe.get("usage")}
+                result=parse_completion(from_probe,pm,pt)
+                if result["cost_usd"]>state["inflight"]["reservation_usd"]:
+                    raise PilotStopped("PROBE_COST_EXCEEDS_ORIGINAL_RESERVATION")
+                serving=metadata(transport,result["completion_id"])
+                if mode=="live" and serving["provider_route"]!="AtlasCloud":
+                    raise PilotStopped("PROBE_PROVIDER_NOT_VERIFIED_ATLASCLOUD")
+                # Probe end timestamp is recorded in its immutable GitHub run
+                # log (38048702034); artifact did not contain a timestamp.
+                result["completed_utc"]=probe.get("completed_utc",
+                                                 "2026-10-10T11:31:28+00:00")
+                rec=canonical(pm,pt,probe["settings"],result,serving)
+                rec["notes"]+="; RECOVERED_FROM_SEPARATE_PAID_IDENTITY_PROBE_38048702034"
+                validate_row(rec,"pilot",{pt["trial_id"]:pt})
                 state.setdefault("rejected_attempts",[]).append({
                     "reason":state["status"],"inflight":state["inflight"],
-                    "disposition":"Explicit authorization of rejected HTTP"+
-                      ("400" if rejected400 else "429")+" without an observed completion",
+                    "disposition":"Rejected original unmatched response retained as unknown charge; verified same-model replacement from probe run 38048702034",
                     "acknowledged_utc":now()})
+                state["collected"].append(rec)
+                state["cost_usd"]=round(state["cost_usd"]+result["cost_usd"],9)
                 state["inflight"]=None
-                state["status"]="RESUMING_PREVIOUS_REJECTED_HTTP_REQUEST"
+                state["status"]="RESUMED_WITH_AUDITED_PROBE"
+                state["probe_run_id"]=38048702034
                 save(checkpoint,state)
-            else:
-                raise PilotStopped("UNCERTAIN_PRIOR_INFLIGHT_NEEDS_MANUAL_RECONCILIATION")
+                reconciled=True
+            if not reconciled:
+                rejected400=(os.environ.get("FULL_PILOT_RECOVER_HTTP400")=="ACKNOWLEDGED_INVALID_REQUEST" and
+                    error.startswith("STOP_UNCERTAIN_CHARGE_HTTP_400") and
+                    state["inflight"].get("index")==len(state.get("collected",[])))
+                rejected429=(os.environ.get("FULL_PILOT_RECOVER_HTTP429")=="ACKNOWLEDGED_RATE_LIMIT" and
+                    error.startswith("STOP_UNCERTAIN_CHARGE_HTTP_429") and
+                    state["inflight"].get("index")==len(state.get("collected",[])))
+                if rejected400 or rejected429:
+                    # A documented HTTP 400 validation rejection or HTTP 429 rate
+                    # limitation produced no completed generation; recovery requires
+                    # a separate explicit approval, never silent automatic retries.
+                    state.setdefault("rejected_attempts",[]).append({
+                        "reason":state["status"],"inflight":state["inflight"],
+                        "disposition":"Explicit authorization of rejected HTTP"+
+                          ("400" if rejected400 else "429")+" without an observed completion",
+                        "acknowledged_utc":now()})
+                    state["inflight"]=None
+                    state["status"]="RESUMING_PREVIOUS_REJECTED_HTTP_REQUEST"
+                    save(checkpoint,state)
+                else:
+                    raise PilotStopped("UNCERTAIN_PRIOR_INFLIGHT_NEEDS_MANUAL_RECONCILIATION")
         if state.get("status")=="finished":
             return state
     else:
@@ -303,6 +353,16 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
             state["status"]="STOP_UNCERTAIN_CHARGE_"+str(ex)
             save(checkpoint,state)
             break
+        # Persist mismatched response provenance BEFORE strict validation.
+        # This prevents another ambiguous model revision from disappearing.
+        if isinstance(response,dict) and response.get("model")!=model:
+            state["unaccepted_response"]={
+                "expected_model":model,"returned_model":response.get("model"),
+                "generation_id":response.get("id"),
+                "usage_cost_usd":(response.get("usage") or {}).get("cost"),
+                "response_content":((response.get("choices") or [{}])[0].get("message") or {}).get("content"),
+                "trial_id":trial["trial_id"],"recorded_utc":now()}
+            save(checkpoint,state)
         try:
             res=parse_completion(response,model,trial)
         except PilotStopped as ex:
