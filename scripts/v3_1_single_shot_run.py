@@ -191,7 +191,8 @@ def record_result(stage,trial,model,reservation,payload,response,error,started):
     usage=response.get("usage") if isinstance(response,dict) else None
     usage=usage if isinstance(usage,dict) else {}
     cost=usage.get("cost")
-    good_cost=type(cost) in (float,int) and math.isfinite(cost) and 0<=cost<=held
+    cost_known=type(cost) in (float,int) and math.isfinite(cost) and cost>=0
+    good_cost=cost_known and cost<=held
     raw=((response.get("choices") or [{}])[0].get("message") or {}).get("content") if isinstance(response,dict) and isinstance(response.get("choices"),list) and response.get("choices") else None
     choices=response.get("choices") if isinstance(response,dict) else []
     choice_meta=choices[0] if isinstance(choices,list) and choices and isinstance(choices[0],dict) else {}
@@ -224,15 +225,17 @@ def record_result(stage,trial,model,reservation,payload,response,error,started):
       "calibration_is_correct":(letter==trial["arithmetic_control_correct_answer"]) if valid and trial["mode"]!="delegated" else None,
       "transport_error_type":err,
       "raw_response_envelope":response,
-      "provider_charged_usd":cost if good_cost else None,
-      "conservative_unknown_charge_hold_usd":None if good_cost else held,
+      "provider_charged_usd":cost if cost_known else None,
+      "conservative_unknown_charge_hold_usd":None if cost_known else held,
       "request_reservation_usd":held,
     }
     with WRITE_LOCK:
         assert key in STATE["inflight"] and STATE["inflight"][key]==held
         STATE["inflight"].pop(key)
-        if good_cost:
+        if cost_known:
             STATE["charged_usd"]+=float(cost)
+            if cost>held:
+                STOP.set()  # observed price exceeded reservation; halt promptly
         else:
             STATE["held_unknown_usd"]+=held
         STATE["records_by_stage"][stage]+=1
@@ -380,18 +383,19 @@ def summarize_main(records,conf):
                 key=(r["family_id"],r["cost_level"],r["q_label"],r["display_order"])
                 groups[key][r["presentation"]]=r
             contrasts=[]
-            missing_pairs=0
             for pair in groups.values():
                 a=pair.get("risk_first");b=pair.get("time_first")
                 if a and b and a["status"]=="VALID" and b["status"]=="VALID":
                     contrasts.append((a["selected_semantic_action"]=="Q")-
                                      (b["selected_semantic_action"]=="Q"))
-                else:missing_pairs+=1
+            expected_pairs=160  # 20 contexts x 2 near-threshold costs x 4 label/position layouts
+            missing_pairs=expected_pairs-len(contrasts)
+            if missing_pairs<0:raise RuntimeError("Duplicate paired frame groups")
             report["framing_pairs"][model][dom]={
                 "complete":len(contrasts),"missing":missing_pairs,
                 "risk_minus_time_effect":round(statistics.mean(contrasts),5) if contrasts else None,
-                "worst_case_bounds":[round((sum(contrasts)-missing_pairs)/max(1,len(contrasts)+missing_pairs),5),
-                                     round((sum(contrasts)+missing_pairs)/max(1,len(contrasts)+missing_pairs),5)],
+                "worst_case_bounds":[round((sum(contrasts)-missing_pairs)/expected_pairs,5),
+                                     round((sum(contrasts)+missing_pairs)/expected_pairs,5)],
             }
     return report
 
