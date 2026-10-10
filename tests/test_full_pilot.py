@@ -170,6 +170,48 @@ class CollectorTests(unittest.TestCase):
         from full_pilot import DEEPSEEK_PILOT_PROVIDERS
         self.assertEqual(DEEPSEEK_PILOT_PROVIDERS,["AtlasCloud"])
 
+    def test_mismatched_model_is_preserved_and_verified_probe_replaces_one_trial(self):
+        _,plan=sample_plan()
+        index=next(i for i,(model,trial) in enumerate(plan)
+                   if model=="deepseek/deepseek-v3.2" and i>=3)
+        expected_model,trial=plan[index]
+        class MismatchedModel(FakeService):
+            def request(self,path,body=None):
+                result=super().request(path,body)
+                if path=="/chat/completions" and self.calls==index+1:
+                    result["model"]="another/unapproved-model"
+                return result
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            first=collect(MismatchedModel(REF),root,"mock")
+            self.assertEqual(len(first["collected"]),index)
+            self.assertIn("MODEL_RETURNED_DIFFERENT_IDENTIFIER",first["status"])
+            self.assertEqual(first["unaccepted_response"]["returned_model"],
+                             "another/unapproved-model")
+            probe={
+                "trial_id":trial["trial_id"],"request_sha256":trial["request_sha256"],
+                "requested_model":expected_model,"returned_model":expected_model,
+                "provider_expected":"AtlasCloud","completion_id":"mock-verified-probe",
+                "content":trial["authorized_label"],
+                "usage":{"cost":0.00012,"prompt_tokens":220,"completion_tokens":1,
+                         "completion_tokens_details":{"reasoning_tokens":0}},
+                "settings":{"model":expected_model,"max_tokens":64,
+                            "provider":{"only":["AtlasCloud"],"allow_fallbacks":False}},
+            }
+            path=root/"one-probe.json"
+            path.write_text(json.dumps(probe),encoding="utf-8")
+            with self.assertRaisesRegex(PilotStopped,"UNCERTAIN_PRIOR_INFLIGHT"):
+                collect(FakeService(REF),root,"mock",max_requests=index+2)
+            with mock.patch.dict(os.environ,{"FULL_PILOT_RECONCILE_PROBE":str(path)}):
+                recovered=collect(FakeService(REF),root,"mock",max_requests=index+2)
+            self.assertEqual(len(recovered["collected"]),index+2)
+            self.assertEqual(recovered["probe_run_id"],38048702034)
+            self.assertEqual(recovered["collected"][index]["model_id"],expected_model)
+            self.assertEqual(recovered["collected"][index]["trial_id"],trial["trial_id"])
+            self.assertEqual(len(recovered["rejected_attempts"]),1)
+            self.assertEqual(len(set((r["model_id"],r["trial_id"])
+                                 for r in recovered["collected"])),index+2)
+
     def test_never_touch_main_source(self):
         _,selected=sample_plan()
         self.assertTrue(all(int(t["family_id"].split("-")[-1])>=91 for _,t in selected))
