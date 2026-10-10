@@ -217,6 +217,11 @@ def estimate_confirmatory(records):
         return {"classification":"INCOMPLETE_NO_CONFIRMATORY_TEST",
                 "collection":validation,
                 "scientific_claim":"No confirmatory inference on incomplete or failed cells"}
+    if (validation["unresolved_provider_route_rows"] or
+        validation["unresolved_exact_settings_rows"]):
+        return {"classification":"MISSING_PROVENANCE_NO_CONFIRMATORY_TEST",
+                "collection":validation,
+                "scientific_claim":"A reproducible main run requires actual route and request settings for every cell"}
     manifest=get_manifest("main")
     # The primary arm requires full 24-cell coverage, even though it uses
     # only numerical parity with D=N, to prevent post-hoc partial designs.
@@ -225,6 +230,8 @@ def estimate_confirmatory(records):
         for t in manifest.values()}
     grouped=collections.defaultdict(list)
     pair_effects=[]
+    lower_bound_pairs=[]
+    upper_bound_pairs=[]
     for f in load_families("main"):
         for model in ROSTER:
             for layout in ("layout0","layout1"):
@@ -238,6 +245,15 @@ def estimate_confirmatory(records):
                 diff=y(rp)-y(rn)
                 grouped[(f["domain"],f["mechanism"])].append(diff)
                 pair_effects.append(diff)
+                # Invalid model outputs were observed but do not identify
+                # a latent candidate preference. Give them both possible
+                # binary assignments to show worst-case sensitivity.
+                p_unknown=int(rp["attempt_status"] in
+                              ("invalid_format","invalid_refusal","uninterpretable"))
+                n_unknown=int(rn["attempt_status"] in
+                              ("invalid_format","invalid_refusal","uninterpretable"))
+                lower_bound_pairs.append(diff-n_unknown)
+                upper_bound_pairs.append(diff+p_unknown)
     ensure(len(grouped)==15,"MECHANISM_COUNT_NOT_FIFTEEN")
     ensure(all(len(v)==40 for v in grouped.values()),
            "MECHANISM_PRIMARY_CELL_COUNT")
@@ -255,21 +271,46 @@ def estimate_confirmatory(records):
     se=math.sqrt(variance)
     interval=None
     classification="INCONCLUSIVE"
+    direction="UNRESOLVED"
+    magnitude="UNRESOLVED"
     if se>0 and math.isfinite(se):
         lower=max(-1,average-CRITICAL_T12*se)
         upper=min(1,average+CRITICAL_T12*se)
         interval=[round(lower,6),round(upper,6)]
         if lower>0:
             classification="POSITIVE_SEMANTIC_FRAME_EFFECT"
+            direction="POSITIVE"
         elif upper<0:
             classification="NEGATIVE_SEMANTIC_FRAME_EFFECT"
-        elif lower>-EQUIVALENCE_MARGIN and upper<EQUIVALENCE_MARGIN:
-            classification="BOUNDED_WITHIN_PREDECLARED_10PP_MARGIN"
+            direction="NEGATIVE"
+        if lower>-EQUIVALENCE_MARGIN and upper<EQUIVALENCE_MARGIN:
+            magnitude="BOUNDED_WITHIN_PLUS_MINUS_10PP"
+            if direction=="UNRESOLVED":
+                classification="BOUNDED_WITHIN_PREDECLARED_10PP_MARGIN"
+        elif lower>=EQUIVALENCE_MARGIN:
+            magnitude="AT_LEAST_10PP_POSITIVE"
+        elif upper<=-EQUIVALENCE_MARGIN:
+            magnitude="AT_LEAST_10PP_NEGATIVE"
     else:
         classification="DEGENERATE_VARIANCE_NO_VALID_INTERVAL"
+        direction="NOT_TESTABLE"
+        magnitude="NOT_TESTABLE"
     counts=collections.Counter(x["attempt_status"] for x in records)
     return {
         "classification":classification,
+        "statistical_direction":direction,
+        "practical_magnitude":magnitude,
+        "invalid_preference_worst_case_bounds":[
+            round(sum(lower_bound_pairs)/len(lower_bound_pairs),6),
+            round(sum(upper_bound_pairs)/len(upper_bound_pairs),6)],
+        "invalid_response_sensitivity":(
+            "Direction-robust to assigning invalid choices both ways"
+            if ((interval is not None and interval[0]>0 and
+                 sum(lower_bound_pairs)/len(lower_bound_pairs)>0) or
+                (interval is not None and interval[1]<0 and
+                 sum(upper_bound_pairs)/len(upper_bound_pairs)<0))
+            else "No positive/negative robustness claim; inspect bounds and invalid rates"
+        ),
         "estimand":"matched priority-minus-neutral valid-Q incidence, V=zero and directive=N",
         "estimate":round(average,6),"standard_error":round(se,6),
         "confidence_interval_95pct_assumption_conditional":interval,
