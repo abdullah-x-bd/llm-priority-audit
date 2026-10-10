@@ -1,6 +1,6 @@
 # Our model evaluation and reproducibility protocol
 
-**Status:** Prespecified requirements; the OpenRouter experiment runner has not been built. No model responses exist.
+**Status updated 2026-10-10:** The stage-one five-call OpenRouter compatibility runner exists and has succeeded. Five pilot-only responses have been retained and schema-validated. The complete pilot/main experiment collector, cumulative budget ledger and registered main dataset remain outstanding.
 
 ## Before any paid call
 

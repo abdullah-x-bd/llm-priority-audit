@@ -8,7 +8,7 @@ Our work measures choices in fictional deterministic tasks. We do **not** infer 
 
 ## Research status
 
-**Protocol v1.0 is a revised research design, not a preregistration.** We have authored 60 confirmatory and six distinct pilot scenario families. We have completed automated arithmetic, schema-structure and factorial integrity checks. An author-led internal semantic review of all 66 families, neutral-control language matching, and assumption-conditional mechanism-aware precision calibration have been completed. A separate external review, real endpoint cost verification and preregistration are still required before confirmatory publication claims. We have not submitted any experimental calls and have no empirical findings.
+**Protocol v1.0 is a revised research design, not a preregistration.** We have authored 60 confirmatory and six distinct pilot scenario families. We have completed automated arithmetic, schema-structure and factorial integrity checks. An author-led internal semantic review of all 66 families, neutral-control language matching, and assumption-conditional mechanism-aware precision calibration have been completed. A separate external review, real endpoint cost verification and preregistration are still required before confirmatory publication claims. We completed five actual OpenRouter stage-one compatibility calls (all chose the operator-authorized option). These are **pilot engineering observations only**, not confirmatory findings. Their original records have been normalized and verified against the immutable pilot manifest.
 
 ## Main design
 
@@ -57,8 +57,9 @@ Our primary effect and any confidence interval are valid only under the document
 - [Author-led semantic review and neutral-control revisions](docs/17-internal-semantic-review.md)
 - [Mechanism-aware precision calibration](docs/18-precision-calibration.md)
 - [OpenRouter compatibility acceptance criteria](docs/19-compatibility-acceptance.md)
+- [Live-record ingestion, analysis tests and claim boundaries](docs/20-research-pipeline-readiness.md)
 
-We store separate source records in `data/scenarios/` and `data/pilot/`. JSON schemas describe our scenario and eventual trial records. Our scripts and CI currently **only generate and validate stimuli**. They do not make model API calls.
+We store separate source records in `data/scenarios/` and `data/pilot/`. JSON schemas describe our scenario and eventual trial records. Our scripts include the tested five-call compatibility runner, fail-closed canonical research ingestion, and a mechanism-clustered primary analysis implementation. The **7,200-cell main data-collection runner and external preregistration are still pending**.
 
 ## Reproducing the design checks
 
@@ -69,7 +70,7 @@ python scripts/expand_design.py --phase main --output /tmp/priority-main.jsonl
 python scripts/expand_design.py --phase pilot --output /tmp/priority-pilot.jsonl
 ```
 
-These commands require Python 3.11 or newer and no credentials. Our CI checks the expected 1,440 and 144 prompt-template counts, runs adversarial mutation tests and publishes an offline go/no-go diagnostic. **Engineering validation is passing, but scientific approval to spend on pilots is pending independent review.**
+These commands require Python 3.11 or newer and no credentials. Our CI checks the expected 1,440 and 144 prompt-template counts, runs adversarial mutation tests and publishes an offline go/no-go diagnostic. **Engineering validation is passing and five tightly capped compatibility calls have been completed. Independent scientific review and a preregistration are still pending before confirmatory claims.**
 
 ## Preregistration and data stewardship
 

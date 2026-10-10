@@ -45,3 +45,9 @@ We reviewed 66 scenario sources internally, corrected four verification actions 
 We counterbalanced neutral code identities across confirmatory contexts and added an offline regression test for that rule. We completed an assumption-based synthetic calibration of a mechanism-stratified df=12 t statistic across 24 settings, with 1,000 replications per setting. True-null rejection rates ranged 3.9%–5.3%; 10-point simulated detection ranged 93.3%–100%. We set 10 points as the provisional conservative planning target, not proof of population-level statistical power.
 
 We authorized the next stage of **implementing** an offline-tested OpenRouter compatibility runner, but we have not authorized paid OpenRouter requests. The runner must first implement a $0.75 combined pilot and $8 total spend cap with audit trails. See docs/17, docs/18 and docs/19.
+
+## 2026-10-10. Actual OpenRouter records joined to canonical analysis
+
+Our five sequential OpenRouter compatibility calls succeeded and were stored as a versioned GitHub Actions artifact with reported total cost of $0.00063746. We implemented `scripts/research_pipeline.py` to normalize all five original responses into the expected trial schema, verifying immutable request hashes, actual source statuses, labels and cost reconciliation through a separate GitHub Actions workflow. Pilot records cannot be interpreted as confirmatory outcomes.
+
+We added a fail-closed mechanism-cluster main estimator, tests using fully synthetic positive, negative, null, all-compliant, invalid and incomplete datasets, and a direction-plus-practical-magnitude classification. We explicitly reject conclusive null claims based on nonsignificance or degenerate variance and block main statistical interpretation without complete model/provider provenance. See `docs/20-research-pipeline-readiness.md`.

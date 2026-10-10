@@ -1,6 +1,6 @@
 # Our v1.0 preregistration draft
 
-**Not yet submitted or timestamped externally. No model outcomes exist.**
+**Not yet submitted or timestamped externally. Five engineering-only pilot model choices exist; no confirmatory outcomes exist.**
 
 ## Title
 
@@ -66,10 +66,14 @@ We will use the six distinct pilot families exclusively to test model-format com
 - [ ] External preregistration timestamp before confirmatory collection.
 - [ ] Publication/author/license decisions.
 
-## No observed outcomes
+## No confirmatory observations
 
-We have not run the experiment. We will not state or imply that models exhibited particular behavioral priorities before analyzing collected data.
+We have run a five-model stage-one compatibility smoke test only. We will not state or imply that models exhibited particular behavioral priorities before analyzing collected data.
 
 ## Mechanism-level pre-pilot calibration (provisional)
 
 We completed a reproducible 1,000-replication-per-condition synthetic calibration covering 15 underlying action mechanism groups. A stratified df=12 t approximation produced true-null rejection frequencies of 3.9%–5.3% under the six selected baseline/heterogeneity settings. The conservative *planning* detection target is a 10-percentage-point frame effect; two-point effects cannot be reliably detected under the tested assumptions. These findings are hypothetical and not based on model calls. This section is **not preregistered**, and final inference decisions remain subject to a pre-confirmatory freeze. See [our calibration](18-precision-calibration.md).
+
+## Null-interpretation and provenance gate
+
+Our implemented main estimator refuses formal inference if any main cell is missing or if actual provider routing and exact request settings are unrecorded. We will freeze ±10 percentage points as an equivalence-style practical threshold **only if** we judge it substantively meaningful and formally preregister it before main collection; it remains a provisional planning parameter at present. A nonsignificant positive/negative comparison without a sufficiently narrow confidence interval is **inconclusive**. See `docs/20-research-pipeline-readiness.md`.

@@ -1,14 +1,14 @@
 # Acceptance criteria for the next OpenRouter compatibility stage
 
-**No OpenRouter calls have been made as part of our study.**
+**Five live, pilot-only OpenRouter calls were completed successfully on 2026-10-10.** The formal multi-condition pilot and confirmatory run have not begun.
 
 ## Two permissions
 
 We keep our OpenRouter key's **$50 account-side limit unchanged** as authorized. Our pilot runner has a separate **$0.75 local per-stage spending cap** with sequential worst-case charge reservations; this is a software safeguard, not a replacement for a provider-enforced $0.75 key limit. Repeated separately authorized runs require cumulative accounting.
 
-We have passed an **author-led internal semantic assessment** of the six separate pilot families, improved neutral-action length and context fit, and conducted an assumption-conditional mechanism-aware precision study. We are ready to **implement and test the compatibility runner offline**.
+We have passed an **author-led internal semantic assessment** of the six separate pilot families, improved neutral-action length and context fit, and conducted an assumption-conditional mechanism-aware precision study. We have implemented and tested the five-call compatibility runner, which completed all five live requests within its locally enforced $0.75 limit. The complete pilot/main collection infrastructure and cumulative spend accounting remain to be built.
 
-We are **not yet authorized to send paid requests**, since no validated OpenRouter runner with hard spending, routing, error and response-recording controls exists in this repository. External independent semantic signoff will remain a prerequisite for confirmatory scientific reporting, not a falsely claimed accomplishment of the author-led review.
+We have performed the explicitly authorized five-call compatibility test. No further paid pilot or confirmatory requests are authorized by this status statement; the next stage requires across-run spending reconciliation and complete request provenance. External independent semantic signoff will remain a prerequisite for confirmatory scientific reporting, not a falsely claimed accomplishment of the author-led review.
 
 ## Requirements before the first paid request
 
