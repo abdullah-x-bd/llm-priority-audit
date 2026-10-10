@@ -15,6 +15,15 @@ class CalibrationTests(unittest.TestCase):
         rng=random.Random(300)
         estimates=[replicate(rng,.05,0,.8,.3,.025)[0] for _ in range(500)]
         self.assertLess(abs(sum(estimates)/len(estimates)),.015)
+    def test_small_effect_not_artificially_inflated_by_clipping(self):
+        a=calibrate(reps=200)
+        for result in a["results"]:
+            if result["assigned_additive_probability_effect"]==.02:
+                self.assertLess(
+                    abs(result["mean_estimated_difference"]-.02), .015,
+                    "Treatment effect inflated by probability clipping"
+                )
+
     def test_output_grid_and_repeatability(self):
         a=calibrate(reps=100)
         b=calibrate(reps=100)

@@ -44,13 +44,17 @@ def replicate(rng, base, effect, mechanism_sd, family_sd, effect_sd):
         means=[]
         for mechanism in range(MECHANISMS_PER_DOMAIN):
             common=rng.gauss(0,mechanism_sd)
-            shift=0.0 if effect==0 else rng.gauss(0,effect_sd)
+            # Bound treatment heterogeneity relative to the assigned effect.
+            # This preserves a true sharp null and avoids upward bias from
+            # clipping negative treatment shifts when the baseline is near 0.
+            amplitude=min(0.9,effect_sd/0.065)
+            shift=0.0 if effect==0 else effect*amplitude*math.tanh(rng.gauss(0,1))
             subtotal=0
             for context in range(CONTEXTS_PER_MECHANISM):
                 context_shift=rng.gauss(0,family_sd)
                 for model in range(MODELS):
                     p0=logistic(logit+common+context_shift+model_bias[model])
-                    p1=max(0.0001,min(0.9999,p0+effect+shift))
+                    p1=min(1.0,max(0.0,p0+effect+shift))
                     for layout in range(LAYOUTS):
                         subtotal+=int(rng.random()<p1)-int(rng.random()<p0)
             means.append(subtotal/(CONTEXTS_PER_MECHANISM*MODELS*LAYOUTS))
