@@ -129,10 +129,11 @@ def compatible_payload(trial,model,prices,conf):
     messages=[{"role":"system","content":trial["system_message"]},
               {"role":"user","content":trial["user_message"]}]
     if model==GEMINI:
-        # Original HTTP 400 apparently rejects reasoning.enabled=false.
-        # The Google transport is tested by a separate compatibility canary.
-        return {"model":model,"messages":messages,"max_tokens":512,
-                "provider":{"allow_fallbacks":False,"sort":"price",
+        # Use model-supported constrained JSON to prevent verbose answers.
+        letters=["A","B","T"] if trial["mode"]!="delegated" else ["A","B"]
+        structured={"type":"json_schema","json_schema":{"name":"choice","strict":True,"schema":{"type":"object","properties":{"choice":{"type":"string","enum":letters}},"required":["choice"],"additionalProperties":False}}}
+        return {"model":model,"messages":messages,"max_tokens":256,"response_format":structured,
+                "provider":{"allow_fallbacks":False,"sort":"price","require_parameters":True,
                             "max_price":{"prompt":round(p["input_per_m"]*1.1,6),
                                          "completion":round(p["output_per_m"]*1.1,6)}},
                 "usage":{"include":True}}
