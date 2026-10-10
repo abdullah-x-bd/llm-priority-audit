@@ -12,7 +12,7 @@
     "signed_human_reviews": 0,
     "authorized_paid_calls": 0,
     "inference_calls_performed": 0,
-    "manifest_sha256": "8381934a0947bc4189fab68acd7b9c68831280d3ef95304ec8df4019d3557cff",
+    "manifest_sha256": "ecc90a1e8a3310c498f715297cace1f1c5d2fab2fee9036afd944e32512c6728",
     "status": "OFFLINE_CANDIDATE_BLOCKED_PENDING_SEMANTIC_AND_ECONOMIC_REVIEW"
   },
   "calibration": {
