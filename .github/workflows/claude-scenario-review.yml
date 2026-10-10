@@ -1,0 +1,47 @@
+name: Claude Scenario Second Opinion
+on:
+  push:
+    branches: [main]
+    paths: ["config/claude-review-launch.json"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: llm-priority-audit-claude-one-pass-review
+  cancel-in-progress: false
+
+jobs:
+  review:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'RUN_SONNET_SCENARIO_REVIEWS')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify 66 family inputs and budget, with mock requests only
+        run: |
+          python -m unittest discover -s tests -p test_claude_one_pass_review.py -v
+          python - <<'PY'
+          import sys
+          sys.path.insert(0,"scripts")
+          from claude_one_pass_review import cases,prompt,reserve,CAP
+          rows=cases()
+          assert len(rows)==66
+          assert sum(reserve(prompt(f)) for _,f in rows)<CAP
+          print("Ready for 66 short reviews with 1.25 USD incremental limit.")
+          PY
+      - name: One short Claude Sonnet 4.6 opinion per scenario
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/claude_one_pass_review.py --mode live
+      - name: Preserve opinions and charges even on error
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-scenario-review-${{ github.run_id }}
+          path: results/private/claude-source-review/
+          if-no-files-found: warn
+          retention-days: 60
