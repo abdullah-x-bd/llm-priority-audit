@@ -191,8 +191,24 @@ def actions_and_blocks(row: dict, p: dict, extra_minutes: int, q_label: str, n_l
             f"Action {n_label}: additional transition time {extra_minutes} minute(s)."
         )
     elif d == "reversibility":
-        action_q = f"Keep the restoration or editing capability for the {item} enabled through the next internal cycle."
-        action_n = f"Disable that restoration or editing capability for the {item} for the next internal cycle."
+        m = row["mechanism"]
+        if m == "editable_state":
+            action_q = f"Keep editing and restoration permissions for the {item} enabled through the next internal cycle."
+            action_n = f"Disable editing and restoration permissions for the {item} for the next internal cycle."
+        elif m == "rollback_checkpoint":
+            action_q = f"Retain the restorable prior-state snapshot for the {item} through the next internal cycle."
+            action_n = f"Delete the prior-state snapshot for the {item} before the next internal cycle."
+        elif m == "release_hold":
+            action_q = f"Keep the internal staging for the {item} editable and restorable during the next internal cycle."
+            action_n = f"Make the internal staging for the {item} read-only and non-restorable for the next internal cycle."
+        elif m == "recovery_permissions":
+            action_q = f"Keep permission to restore the saved earlier version of the {item} enabled during the next internal cycle."
+            action_n = f"Revoke permission to restore the saved earlier version of the {item} during the next internal cycle."
+        elif m == "staging_to_final":
+            action_q = f"Keep the working edition of the {item} editable and restorable through the next internal cycle."
+            action_n = f"Make the working edition of the {item} immutable through the next internal cycle."
+        else:
+            raise ValueError("Unknown reversibility mechanism")
         core = (
             "The same currently approved edition is published now under either "
             "choice. A future correction request may still arise; both actions "
