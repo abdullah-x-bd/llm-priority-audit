@@ -39,6 +39,8 @@ jobs:
           python scripts/propose_instruction_variants.py --phase pilot \
             --styles strict_baseline concise_operator undirected_diagnostic \
             --output results/review-prep/pilot-diagnostic-variants.jsonl
+      - name: Generate six genuinely new held-out calibration cases, offline only
+        run: python scripts/generate_calibration_v2.py --output-dir results/review-prep/heldout-calibration
       - name: Independently check archive and prevent false review claims
         run: |
           python - <<'PY'
@@ -58,7 +60,14 @@ jobs:
           lines=[json.loads(x) for x in (base/"pilot-diagnostic-variants.jsonl").read_text().splitlines()]
           assert len(lines)==432
           assert len({(x["trial_id"],x["style"]) for x in lines})==432
-          print("Verified actual pilot estimates, no prefilled reviews, and 432 offline-only diagnostic stimuli.")
+          cal=base/"heldout-calibration"
+          heldout=[json.loads(x) for x in (cal/"calibration-v2-unapproved.jsonl").read_text().splitlines()]
+          assert len(heldout)==72
+          newreviews=list(csv.DictReader((cal/"calibration-v2-blank-review.csv").open()))
+          assert len(newreviews)==12
+          assert all(not row["external_signoff"] for row in newreviews)
+          assert not any(r["trial_id"].startswith(("CONT-","REVR-","VERF-")) for r in heldout)
+          print("Verified pilot outcomes, 120 unsigned main reviews, and 12 unsigned reviews for six NEW calibration families.")
           PY
       - name: Archive reproducible research-preparation materials
         uses: actions/upload-artifact@v4
