@@ -200,7 +200,7 @@ def main():
         result=analyze(fake,manifest)
         assert result["attempted"]==1680 and result["valid"]==1680
         assert all(x["attribute_order_complete_pairs"]==160 for x in result["domains"].values())
-        assert all(x["n"]==480 for x in result["expected_work_benchmark_non_ties"].values()) is False
+        assert all(x["n"]==480 and x["correct"]==480 for x in result["expected_work_benchmark_non_ties"].values())
         print(json.dumps({"analysis_smoke":"PASS","scenario_mechanisms":15,"pairs":480,"calls":1680}))
         return
     path=DEST/"all-raw-responses.jsonl"
