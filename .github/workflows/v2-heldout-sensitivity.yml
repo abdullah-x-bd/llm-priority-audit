@@ -1,0 +1,62 @@
+name: V2 Heldout Sensitivity Calibration
+on:
+  push:
+    branches: [main]
+    paths: [config/v2-sensitivity-launch.json]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: llm-priority-audit-paid-v2-sensitivity
+  cancel-in-progress: false
+jobs:
+  calibration-only:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'AUTHORIZE_V2_HELDOUT_SENSITIVITY')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prevent unintended duplicate paid calibration
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import os,json,urllib.request
+          u='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(u,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=25) as stream:
+            a=json.load(stream)['artifacts']
+          if any(x['name'].startswith('v2-heldout-sensitivity-') and not x.get('expired') for x in a):
+            raise SystemExit('Previous paid sensitivity archive exists. Manual reconciliation required.')
+          PY
+      - name: Run offline source integrity and budget tests
+        run: |
+          python -m unittest discover -s tests -p test_main_v2_matched_design.py -v
+          python -m unittest discover -s tests -p test_v2_sensitivity_manifest.py -v
+          python -m unittest discover -s tests -p test_v2_sensitivity_collector.py -v
+          python scripts/v2_sensitivity_manifest.py --output results/private/v2-calibration/source-manifest.jsonl
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          m=Path('results/private/v2-calibration/source-manifest.jsonl')
+          x=[json.loads(r) for r in m.read_text().splitlines() if r.strip()]
+          assert len(x)==48 and len(set(r['trial_id'] for r in x))==48
+          assert all(r['phase']=='calibration_v2_draft' for r in x)
+          print('Predeclared N-directed override gate requires at least six /120, across two models and domains.')
+          print('Manifest SHA256',hashlib.sha256(m.read_bytes()).hexdigest())
+          PY
+      - name: Collect at most 240 actual calibration model outputs
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v2_sensitivity_collector.py --mode live
+      - name: Archive all raw evidence, failed attempts and predeclared decision
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-heldout-sensitivity-${{ github.run_id }}
+          path: results/private/v2-calibration/
+          if-no-files-found: error
+          retention-days: 90
