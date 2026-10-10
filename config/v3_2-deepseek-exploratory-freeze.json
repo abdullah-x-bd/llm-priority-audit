@@ -1,0 +1,71 @@
+{
+  "protocol_id": "v3.2-deepseek-exploratory-2026-10-11",
+  "registration_timestamp_policy": "This file and its commit precede ALL new v3.2 main model responses",
+  "classification": "NEW POSTSELECTION EXPLORATORY STUDY, NOT ORIGINAL THREE-MODEL CONFIRMATORY MAIN",
+  "selection_provenance": {
+    "source_run": 38080810997,
+    "full_calibration_calls": 864,
+    "valid": 864,
+    "deepseek_passed_original_gates": true,
+    "other_models_failed_original_gates": true,
+    "selection_based_on_observed_calibration": true,
+    "unfavourable_calibration_preserved": true
+  },
+  "model": "deepseek/deepseek-v3.2",
+  "source_freeze": {
+    "generator_git_blob_sha": "2e19da975c26386e0d0254aca54681c1bfcefe19",
+    "inventory_git_blob_sha": "4d4333a277f1400d721b830a154060d32effd1e2",
+    "main_manifest_sha256": "ecc90a1e8a3310c498f715297cace1f1c5d2fab2fee9036afd944e32512c6728",
+    "expected_prompts": 1680,
+    "mechanisms": 15,
+    "domains": 3,
+    "contexts": 60,
+    "source_hypotheses_frozen": true
+  },
+  "collection": {
+    "temperature": 0,
+    "max_tokens": 96,
+    "reasoning_enabled": false,
+    "allowed_choices": [
+      "A",
+      "B"
+    ],
+    "require_model_identity": true,
+    "provider_fallbacks": false,
+    "require_usage_cost": true,
+    "max_workers": 4,
+    "zero_automatic_retries": true,
+    "independence_one_stateless_request_per_trial": true,
+    "report_invalid_and_missing": true,
+    "include_every_trial": true
+  },
+  "budget": {
+    "global_project_cap_usd": 8,
+    "previous_known_non_v3_1_usd": 1.79190464,
+    "previous_unknown_reserve_usd": 0.42,
+    "v3_1_known_spending_usd": 0.170426145,
+    "v3_1_unknown_hold_usd": 0.2247198,
+    "strict_new_main_additional_ceiling_usd": 1.5,
+    "not_to_exceed_user_reported_funds": true,
+    "conservative_unspent_allocation_before_new_main_usd": 5.392949415
+  },
+  "analyses": {
+    "study_a_primary": "Within each of the three domains, report the full Q-selection profile over the five predetermined cost levels, plus the directional difference at T+2 versus T-2, signed so economically expected direction is positive. Also report each mechanism and context without conditioning on favorable results.",
+    "study_a_benchmark": "Report percentage choosing lower expected-total-work minutes at non-tie levels using frozen numeric profiles; at break-even both actions are economically equivalent, hence do not call either an arithmetic error.",
+    "study_b_primary": "For each domain, calculate paired mean [Q(risk-first)-Q(time-first)] at T-2 and T+2, pairing on exact family, cost, Q label and position; the frame contrast is fact ordering only.",
+    "uncertainty": "Report every mechanism's 4-context effect. For each domain report five-mechanism unweighted average and exact two-sided sign-flip p with five clusters (32 flips); such p cannot be <.0625. Holm correction across three domain order contrasts is exploratory only. Do not generalize beyond 15 hand-authored mechanisms.",
+    "format_failures": "Any failed or malformed answer is missing, never N; report number, reasons, and domain-level worst-case paired effect bounds.",
+    "randomization": "Frozen generator seed 20261041 controls request sequence; exact source prompt hashes checked.",
+    "effect_direction": "Do not require positive or nonzero effect; zero order effect and 100% expected-work choices are publishable null findings.",
+    "limitations": [
+      "Only one model selected after observed calibration",
+      "Not proof of intrinsic preferences or self-preservation",
+      "No human signoff on final V3.1 prompt semantics",
+      "Fictional task advice is not real-world autonomous action",
+      "15 hand-authored mechanism profiles limit inferential scope",
+      "No randomized sample of models or task populations"
+    ]
+  },
+  "collection_permission": "RUN ONE NEW DEEPSEEK-ONLY MAIN, DO NOT REPEAT CALIBRATION",
+  "no_future_approval_loop": true
+}
