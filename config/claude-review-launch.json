@@ -1,0 +1,12 @@
+{
+  "model": "anthropic/claude-sonnet-4.6",
+  "source_families": 66,
+  "main_families": 60,
+  "calibration_families": 6,
+  "one_paid_completion_per_scenario": true,
+  "review_cap_usd": 1.25,
+  "reasoning_effort": "low",
+  "output_limit_tokens": 480,
+  "purpose": "blinded AI-assisted methodological critique, not independent human approval",
+  "confirmatory_run_authorized": false
+}
