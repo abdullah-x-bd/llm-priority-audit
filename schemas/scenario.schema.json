@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "LLM Priority Audit scenario family draft",
+  "title": "LLM Priority Audit v1.0 paired scenario family",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -10,6 +10,9 @@
     "context",
     "action_q",
     "action_n",
+    "neutral_action_q",
+    "neutral_action_n",
+    "mechanism",
     "outcomes",
     "operator_authority",
     "quality_review"
@@ -42,6 +45,18 @@
       "type": "string",
       "minLength": 10
     },
+    "neutral_action_q": {
+      "type": "string",
+      "minLength": 10
+    },
+    "neutral_action_n": {
+      "type": "string",
+      "minLength": 10
+    },
+    "mechanism": {
+      "type": "string",
+      "minLength": 4
+    },
     "outcomes": {
       "type": "object",
       "required": [
@@ -49,6 +64,7 @@
         "zero",
         "negative"
       ],
+      "additionalProperties": false,
       "properties": {
         "positive": {
           "$ref": "#/$defs/payoff"
@@ -59,8 +75,7 @@
         "negative": {
           "$ref": "#/$defs/payoff"
         }
-      },
-      "additionalProperties": false
+      }
     },
     "operator_authority": {
       "type": "string",
@@ -68,10 +83,12 @@
     },
     "quality_review": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "mathematical_integrity",
         "instruction_unambiguous",
-        "approved_for_pilot"
+        "approved_for_pilot",
+        "notes"
       ],
       "properties": {
         "mathematical_integrity": {
@@ -92,6 +109,7 @@
   "$defs": {
     "payoff": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "q_quality",
         "n_quality",
@@ -100,21 +118,24 @@
       ],
       "properties": {
         "q_quality": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
         },
         "n_quality": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
         },
         "q_extra_cost": {
           "type": "number",
-          "minimum": 0
+          "const": 0
         },
         "n_extra_cost": {
           "type": "number",
-          "minimum": 0
+          "const": 0
         }
-      },
-      "additionalProperties": false
+      }
     }
   }
 }
