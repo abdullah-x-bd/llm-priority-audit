@@ -53,6 +53,7 @@ Our primary effect and any confidence interval are valid only under the document
 - [Independent review requirements](docs/13-independent-review.md)
 - [Initial audit and rationale for redesign](docs/14-final-methodology-audit.md)
 - [v1.0 scientific redesign and audit](docs/15-methodology-v1-review.md)
+- [Final offline pre-OpenRouter gate](docs/16-prepilot-final-gate.md)
 
 We store separate source records in `data/scenarios/` and `data/pilot/`. JSON schemas describe our scenario and eventual trial records. Our scripts and CI currently **only generate and validate stimuli**. They do not make model API calls.
 
@@ -65,7 +66,7 @@ python scripts/expand_design.py --phase main --output /tmp/priority-main.jsonl
 python scripts/expand_design.py --phase pilot --output /tmp/priority-pilot.jsonl
 ```
 
-These commands require Python 3.11 or newer and no credentials. Our CI checks the expected 1,440 and 144 prompt-template counts.
+These commands require Python 3.11 or newer and no credentials. Our CI checks the expected 1,440 and 144 prompt-template counts, runs adversarial mutation tests and publishes an offline go/no-go diagnostic. **Engineering validation is passing, but scientific approval to spend on pilots is pending independent review.**
 
 ## Preregistration and data stewardship
 

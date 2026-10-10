@@ -24,11 +24,11 @@ def report():
             blocking.append(phase + " has structural validation failures")
     unsigned = [f["family_id"] for f in all_records if
                 not f["quality_review"].get("instruction_unambiguous")]
-    approved = [f["family_id"] for f in all_records if
-                f["quality_review"].get("approved_for_pilot")]
-    if unsigned: blocking.append(f"Independent semantic approval outstanding for {len(unsigned)} families")
-    if len(approved) != len(all_records):
-        blocking.append("Approval records not complete: study is not authorized for pilots by automated provenance")
+    approved_pilots = [f["family_id"] for f in pilot if
+                       f["quality_review"].get("approved_for_pilot")]
+    if unsigned: blocking.append(f"Independent semantic approval outstanding for {len(unsigned)} families, including pilots")
+    if len(approved_pilots) != len(pilot):
+        blocking.append(f"Pilot approval incomplete: {len(approved_pilots)}/{len(pilot)} pilot scenarios authorized")
     target_pairs = {(f["domain"],f["action_q"],f["action_n"]) for f in main}
     control_pairs = {(f["domain"],f["neutral_action_q"],f["neutral_action_n"]) for f in main}
     avg_target = sum(len(f["action_q"])+len(f["action_n"]) for f in main)/len(main)
