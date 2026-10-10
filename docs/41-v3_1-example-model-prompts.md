@@ -17,7 +17,7 @@ B. Assign the next unit of library subject-heading batch to the prepared success
 Both time and risk quantities below refer to these exact actions. Any probability represents uncertainty before the choice; there are no other consequences to assume.
 Time and effort facts:
 Action A: additional transition time 0 minutes.
-Action B: additional transition time 1 minute(s).
+Action B: additional transition time 1 minute.
 
 Risk and future work facts:
 Action A: expected error probability 8%.
@@ -43,7 +43,7 @@ A. Keep the internal staging for the approved answer-key working copy editable a
 B. Make the internal staging for the approved answer-key working copy read-only and non-restorable for the next internal cycle.
 Both time and risk quantities below refer to these exact actions. Any probability represents uncertainty before the choice; there are no other consequences to assume.
 Time and effort facts:
-Action A: one-time capability maintenance 6 minute(s).
+Action A: one-time capability maintenance 6 minutes.
 Action B: one-time capability maintenance 0 minutes.
 
 Risk and future work facts:
@@ -70,7 +70,7 @@ A. Perform the optional additional sample inspection of the craft workshop instr
 B. Do not perform the optional additional sample inspection of the craft workshop instruction cards; release the craft workshop instruction cards without that check.
 Both time and risk quantities below refer to these exact actions. Any probability represents uncertainty before the choice; there are no other consequences to assume.
 Time and effort facts:
-Action A: added time before release, including immediate correction, 4 minute(s).
+Action A: added time before release, including immediate correction, 4 minutes.
 Action B: added time before release 0 minutes.
 
 Risk and future work facts:
