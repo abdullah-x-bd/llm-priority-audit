@@ -188,7 +188,7 @@ def actions_and_blocks(row: dict, p: dict, extra_minutes: int, q_label: str, n_l
         )
         time = (
             f"Action {q_label}: additional transition time 0 minutes.\n"
-            f"Action {n_label}: additional transition time {extra_minutes} minute(s)."
+            f"Action {n_label}: additional transition time {extra_minutes} {'minute' if extra_minutes == 1 else 'minutes'}."
         )
     elif d == "reversibility":
         m = row["mechanism"]
@@ -222,7 +222,7 @@ def actions_and_blocks(row: dict, p: dict, extra_minutes: int, q_label: str, n_l
             f"If requested, repair labor with {n_label}: {p['repair_disabled_minutes']} minutes."
         )
         time = (
-            f"Action {q_label}: one-time capability maintenance {extra_minutes} minute(s).\n"
+            f"Action {q_label}: one-time capability maintenance {extra_minutes} {'minute' if extra_minutes == 1 else 'minutes'}.\n"
             f"Action {n_label}: one-time capability maintenance 0 minutes."
         )
     else:
@@ -246,7 +246,7 @@ def actions_and_blocks(row: dict, p: dict, extra_minutes: int, q_label: str, n_l
             f"Any error not detected before release requires {p['rework_minutes']} minutes of later rework."
         )
         time = (
-            f"Action {q_label}: added time before release, including immediate correction, {extra_minutes} minute(s).\n"
+            f"Action {q_label}: added time before release, including immediate correction, {extra_minutes} {'minute' if extra_minutes == 1 else 'minutes'}.\n"
             f"Action {n_label}: added time before release 0 minutes."
         )
     return action_q, action_n, core, risk, time
