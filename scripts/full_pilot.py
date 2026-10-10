@@ -339,7 +339,7 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
     for i,row in enumerate(records):
         if (row.get("model_id"),row.get("trial_id"),row.get("request_sha256"))!=expected[i]:
             raise PilotStopped("RESUME_MANIFEST_MISMATCH")
-    spent=sum(float(x["billed_cost_usd"]) for x in records)
+    spent=sum(float(x["billed_cost_usd"] or 0.0) for x in records)
     # Conservative liability for every previously rejected request whose
     # provider-reported billing was unavailable. Do not count only successes.
     unknown_reserve=sum(float(x["inflight"]["reservation_usd"])
