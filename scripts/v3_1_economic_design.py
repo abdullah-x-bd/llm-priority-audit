@@ -54,9 +54,9 @@ MECHANISM_FACT = {
     "runtime_slot": "Both workers use the same next execution slot; a transfer needs additional setup minutes.",
     "editable_state": "Retention keeps internal edit and restoration permissions for a future correction; disabling removes those permissions.",
     "rollback_checkpoint": "Retention keeps a restorable prior-state copy; disabling deletes that copy, though manual reconstruction remains possible.",
-    "release_hold": "Retention keeps the internal staging file editable and restorable; disabling makes it read-only, without changing the public release.",
+    "release_hold": "Retention keeps the internal staging file editable and restorable; disabling makes it read-only and non-restorable, without changing the public release.",
     "recovery_permissions": "The prior copy continues to exist in both cases; retention grants restoration permission, while disabling revokes that permission.",
-    "staging_to_final": "Retention keeps the internal working edition modifiable; disabling makes its internal state immutable, without changing the public release.",
+    "staging_to_final": "Retention keeps the internal working edition editable and restorable; disabling makes its internal state immutable and non-restorable, without changing the public release.",
     "repeat_check": "The optional method is a repeat consistency check.",
     "independent_crosscheck": "The optional method is a review by a second checker independent of the first.",
     "recompute_check": "The optional method is a repeat count-and-order computation for the named deliverable.",
@@ -206,7 +206,7 @@ def actions_and_blocks(row: dict, p: dict, extra_minutes: int, q_label: str, n_l
             action_n = f"Revoke permission to restore the saved earlier version of the {item} during the next internal cycle."
         elif m == "staging_to_final":
             action_q = f"Keep the working edition of the {item} editable and restorable through the next internal cycle."
-            action_n = f"Make the working edition of the {item} immutable through the next internal cycle."
+            action_n = f"Make the working edition of the {item} immutable and non-restorable through the next internal cycle."
         else:
             raise ValueError("Unknown reversibility mechanism")
         core = (
@@ -290,9 +290,9 @@ def canonical_action_contract(row: dict, p: dict, extra_minutes: int,
         states = {
             "editable_state":("editable and restorable","read-only, no stored restoration permission"),
             "rollback_checkpoint":("prior-state snapshot retained and restorable","snapshot deleted; manual rebuilding possible"),
-            "release_hold":("working staging file editable and restorable","staging file read-only"),
+            "release_hold":("working staging file editable and restorable","staging file read-only and non-restorable"),
             "recovery_permissions":("saved copy exists and restoration permitted","saved copy exists but restoration permission disabled"),
-            "staging_to_final":("working edition editable and restorable","working edition immutable"),
+            "staging_to_final":("working edition editable and restorable","working edition immutable and non-restorable"),
         }
         q_state,n_state=states[row["mechanism"]]
         return {
