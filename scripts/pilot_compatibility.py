@@ -3,7 +3,7 @@
 
 Stage 1 only: five sequential single-shot requests on distinct PILOT families.
 All external calls pass via injected Transport for offline fault testing.
-Requires a dedicated OpenRouter key with lifetime cap <= $0.75.
+Accepts a user-controlled key capped at $50; enforces a separate LOCAL $0.75 stage-one cap using sequential per-request reservations.
 DO NOT use this module for preregistered confirmatory evaluation.
 """
 from __future__ import annotations
@@ -81,15 +81,15 @@ def key_preflight(data):
         raise PilotStopped("KEY_METADATA_MISSING")
     cap=_positive_number(key.get("limit"))
     remaining=_positive_number(key.get("limit_remaining"))
-    if cap is None or cap<=0 or cap>LIMIT+1e-9:
-        raise PilotStopped("KEY_NEEDS_LIMIT_MAX_0_75")
+    # The account key is deliberately left at the user's chosen $50 cap.
+    # The pilot's $0.75 ceiling is enforced separately in run().
+    if cap is None or cap<=0 or cap>50.00+1e-9:
+        raise PilotStopped("KEY_LIMIT_MISSING_OR_ABOVE_50")
     if remaining is None or remaining<0.15:
         raise PilotStopped("KEY_REMAINING_UNAVAILABLE_OR_TOO_LOW")
     if key.get("is_management_key") is True:
         raise PilotStopped("MANAGEMENT_KEY_NOT_INFERENCE_KEY")
-    # Resetting cap can evade lifetime cumulative protection; require no reset.
-    if key.get("limit_reset") not in (None,""):
-        raise PilotStopped("KEY_LIMIT_MUST_NOT_RESET")
+    # Monthly, weekly or daily key limit resets do not change the local pilot cap.
     return {"limit_usd":cap,"remaining_usd":remaining}
 
 def live_model_prices(model_list,ids,reference):

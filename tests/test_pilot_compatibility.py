@@ -36,18 +36,22 @@ class CompatibilityTests(unittest.TestCase):
             self.assertNotIn("models",payload)
             self.assertEqual(payload["usage"],{"include":True})
 
-    def test_missing_key_limit_fails_before_network_call(self):
-        for v in (None,1,100,0):
+    def test_missing_or_excessive_key_limit_fails_before_network_call(self):
+        for v in (None,100,0):
             with self.subTest(limit=v):
                 m=MockTransport(PLAN,{"key":{"limit":v}})
                 with self.assertRaises(PilotStopped):
                     run(m,PLAN,"mock")
                 self.assertEqual(len([c for c in m.calls if c[0]=="/chat/completions"]),0)
 
-    def test_resetting_key_limit_not_accepted(self):
-        m=MockTransport(PLAN,{"key":{"limit_reset":"daily"}})
-        with self.assertRaises(PilotStopped):
-            run(m,PLAN,"mock")
+    def test_fifty_dollar_key_is_accepted_and_local_budget_remains_small(self):
+        m=MockTransport(PLAN,{"key":{"limit":50,"limit_remaining":50,"limit_reset":"monthly"}})
+        report=run(m,PLAN,"mock")
+        self.assertEqual(report["outcome"],"FINISHED_STAGE1")
+        self.assertEqual(report["completed"],5)
+        self.assertEqual(report["budget_usd"],.75)
+        self.assertLessEqual(sum(row["reservation_usd"] for row in report["records"]),.75)
+        self.assertLessEqual(report["reported_cost_usd"],.75)
 
     def test_key_insufficient_balance_not_accepted(self):
         m=MockTransport(PLAN,{"key":{"limit_remaining":.01}})
