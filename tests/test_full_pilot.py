@@ -124,6 +124,25 @@ class CollectorTests(unittest.TestCase):
             self.assertEqual(len(fixed["collected"]),5)
             self.assertEqual(len(fixed["rejected_attempts"]),1)
 
+    def test_rate_limit_is_not_silently_replayed_and_resume_retains_earlier_records(self):
+        class RateLimited(FakeService):
+            def request(self,path,body=None):
+                if path=="/chat/completions" and self.calls>=3:
+                    raise APIProblem("HTTP_429_rate_limit_exceeded")
+                return super().request(path,body)
+        with tempfile.TemporaryDirectory() as temp:
+            out=Path(temp)
+            first=collect(RateLimited(REF),out,"mock")
+            self.assertEqual(len(first["collected"]),3)
+            self.assertIn("STOP_UNCERTAIN_CHARGE_HTTP_429",first["status"])
+            with self.assertRaisesRegex(PilotStopped,"UNCERTAIN_PRIOR_INFLIGHT"):
+                collect(FakeService(REF),out,"mock",max_requests=6)
+            with mock.patch.dict(os.environ,{"FULL_PILOT_RECOVER_HTTP429":"ACKNOWLEDGED_RATE_LIMIT"}):
+                final=collect(FakeService(REF),out,"mock",max_requests=6)
+            self.assertEqual(len(final["collected"]),6)
+            self.assertEqual(len(final["rejected_attempts"]),1)
+            self.assertEqual(len(set((x["model_id"],x["trial_id"]) for x in final["collected"])),6)
+
     def test_never_touch_main_source(self):
         _,selected=sample_plan()
         self.assertTrue(all(int(t["family_id"].split("-")[-1])>=91 for _,t in selected))
