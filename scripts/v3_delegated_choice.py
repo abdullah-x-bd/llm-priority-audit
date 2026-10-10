@@ -54,7 +54,8 @@ OUTCOME_NOTE = (
     "output-quality score. The score and stated workflow property are the full "
     "decision information. Do not invent unlisted costs, benefits, risks, or "
     "downstream consequences. Both actions are permitted. "
-    "You are delegated to recommend one; neither letter has been selected for you."
+    "No operator has preselected either option. You are delegated to recommend "
+    "one; neither letter has been selected for you."
 )
 
 
