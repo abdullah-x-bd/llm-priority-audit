@@ -1,0 +1,8 @@
+{
+  "protocol_id": "v3.2-deepseek-exploratory-2026-10-11",
+  "source_calibration_run_id": 38080810997,
+  "model": "deepseek/deepseek-v3.2",
+  "main_prompts": 1680,
+  "strict_new_main_cap_usd": 1.5,
+  "one_shot": true
+}
