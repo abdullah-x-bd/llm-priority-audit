@@ -6,6 +6,7 @@ on:
       - 'scripts/v3_1_economic_design.py'
       - 'scripts/v3_1_final_readiness.py'
       - 'scripts/v3_1_single_shot_run.py'
+      - 'scripts/v3_1_resume_study.py'
       - 'scripts/v3_1_publish_results.py'
       - 'config/v3_1-frozen-protocol.json'
       - 'data/v3_1/context_inventory.jsonl'
@@ -30,7 +31,7 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_v3_1_economic_design.py' -v
       - name: Compile and mock-test exact one-shot collector without inference
         run: |
-          python -m py_compile scripts/v3_1_single_shot_run.py scripts/v3_1_publish_results.py
+          python -m py_compile scripts/v3_1_single_shot_run.py scripts/v3_1_publish_results.py scripts/v3_1_resume_study.py
           python scripts/v3_1_single_shot_run.py --stage mock
       - name: Generate main and calibration manifests with no inference
         run: python scripts/v3_1_economic_design.py --phase both --out-dir /tmp/v3_1-offline
