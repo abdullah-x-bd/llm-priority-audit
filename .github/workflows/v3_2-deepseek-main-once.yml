@@ -1,0 +1,104 @@
+name: V3.2 DeepSeek 1680 Prompt Exploratory Main One Shot
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v3_2-launch-authorization.json
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v3-2-deepseek-main-do-not-relaunch
+  cancel-in-progress: false
+
+jobs:
+  main:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.run_attempt == 1 && contains(github.event.head_commit.message, 'AUTHORIZE_V3_2_DEEPSEEK_MAIN_ONCE')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check never run before and prior DeepSeek calibration provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          from pathlib import Path
+          repo=os.environ['GITHUB_REPOSITORY']
+          url='https://api.github.com/repos/'+repo+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(url,headers={
+            'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+            'Accept':'application/vnd.github+json',
+            'User-Agent':'v3.2-only-one-paid-run'})
+          with urllib.request.urlopen(req,timeout=35) as h:
+              previous=json.load(h).get('artifacts',[])
+          names=[a.get('name','') for a in previous]
+          if any(x.startswith('v3_2-deepseek-main-') for x in names):
+              raise SystemExit('STOP_ALREADY_HAVE_V3_2_PAID_MAIN_ARCHIVE')
+          auth=json.loads(Path('config/v3_2-launch-authorization.json').read_text())
+          assert auth=={
+              'protocol_id':'v3.2-deepseek-exploratory-2026-10-11',
+              'source_calibration_run_id':38080810997,
+              'model':'deepseek/deepseek-v3.2',
+              'main_prompts':1680,
+              'strict_new_main_cap_usd':1.50,
+              'one_shot':True
+          }
+          print('No prior V3.2 paid data, exact authorization contract verified')
+          PY
+          mkdir -p /tmp/v3_2-calibration-source
+          gh run download 38080810997 --repo abdullah-x-bd/llm-priority-audit --name v3_1-schema-resume-38080810997 --dir /tmp/v3_2-calibration-source
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('/tmp/v3_2-calibration-source/v3_1-single-shot/calibration-report.json')
+          j=json.loads(p.read_text())
+          assert j['attempted_unique_evaluated']==864
+          assert not j['passed_all_gates']
+          assert j['calibration_gates']['deepseek/deepseek-v3.2']['passed']
+          assert not j['calibration_gates']['openai/gpt-5.4-mini']['passed']
+          assert not j['calibration_gates']['google/gemini-3.5-flash-lite']['passed']
+          print('Independent calibration evidence verified, postselection transparent')
+          PY
+      - name: Validate exact frozen stimuli, collector and analysis before paid inference
+        run: |
+          python -m py_compile scripts/v3_2_deepseek_main.py scripts/v3_2_deepseek_analyze.py
+          python -m unittest discover -s tests -p 'test_v3_1_economic_design.py' -q
+          python scripts/v3_2_deepseek_main.py --mode check
+          python scripts/v3_2_deepseek_analyze.py --mode check
+      - name: Collect full 1680 DeepSeek-only main prompts, no retry and $1.50 cap
+        id: main_data
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v3_2_deepseek_main.py --mode collect
+      - name: Archive every prompt and returned raw envelope including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3_2-deepseek-main-${{ github.run_id }}
+          path: |
+            results/private/v3_2-deepseek-exploratory/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Compute frozen domain, mechanism, position and paired frame results
+        if: always()
+        run: python scripts/v3_2_deepseek_analyze.py --mode analyze
+      - name: Preserve nulls, every cell and summary permanently
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/49-v3_2-deepseek-exploratory-results.md docs/50-v3_2-deepseek-exploratory-analysis.json results/public/v3_2-deepseek-main-cells.jsonl
+          git commit -m 'Archive all 1680 DeepSeek V3.2 main outcomes and exploratory analysis without cherry picking' || true
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
