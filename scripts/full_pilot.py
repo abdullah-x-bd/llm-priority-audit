@@ -31,6 +31,9 @@ STAGE1_RUN_ID=38042971803
 SAMPLE_COUNT=720
 SEED=20261010
 PROTOCOL="pilot-v1-factorial-20261010"
+# Pilot-only provider fallback after repeated DeepInfra HTTP429 upstream errors.
+# The model ID stays fixed. Actual serving provider is audited after collection.
+DEEPSEEK_PILOT_PROVIDERS=["DeepInfra","StreamLake","GMICloud","SiliconFlow"]
 # Exact providers resolved from the five successful stage-one generation IDs,
 # via OpenRouter's GET /generation route metadata on 2026-10-10.
 PINNED_PROVIDERS={
@@ -98,9 +101,13 @@ class FakeService:
         if path.startswith("/generation?id="):
             return {"data":{"provider_name":"OFFLINE_TEST_ONLY","total_cost":0.00012}}
         if path=="/chat/completions":
-            if body.get("provider",{}).get("only")!=[PINNED_PROVIDERS.get(body.get("model"))]:
-                raise PilotStopped("MOCK_DETECTED_UNPINNED_PROVIDER")
-            if body.get("provider",{}).get("allow_fallbacks") is not False:
+            m=body.get("model")
+            allowed=(DEEPSEEK_PILOT_PROVIDERS if m=="deepseek/deepseek-v3.2"
+                     else [PINNED_PROVIDERS.get(m)])
+            if body.get("provider",{}).get("only")!=allowed:
+                raise PilotStopped("MOCK_DETECTED_UNAPPROVED_PROVIDER_SET")
+            if body.get("provider",{}).get("allow_fallbacks") is not (
+                m=="deepseek/deepseek-v3.2"):
                 raise PilotStopped("MOCK_DETECTED_UNAPPROVED_FALLBACK")
             self.calls+=1
             self.generation+=1
@@ -261,13 +268,18 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
         if before["remaining_usd"]<reserve:
             state["status"]="STOP_INSUFFICIENT_KEY_CREDIT"
             break
+        provider_cfg={"only":[PINNED_PROVIDERS[model]],
+                      "allow_fallbacks":False,"require_parameters":True,
+                      "max_price":prices[model]["max_price_per_million"]}
+        if model=="deepseek/deepseek-v3.2":
+            provider_cfg["only"]=list(DEEPSEEK_PILOT_PROVIDERS)
+            provider_cfg["allow_fallbacks"]=True
+            provider_cfg["order"]=list(DEEPSEEK_PILOT_PROVIDERS)
         payload={
             "model":model,"messages":[{"role":"system","content":trial["system_message"]},
                {"role":"user","content":trial["user_message"]}],
             "max_tokens":MAX_TOKENS,"usage":{"include":True},
-            "provider":{"only":[PINNED_PROVIDERS[model]],
-                "allow_fallbacks":False,"require_parameters":True,
-                "max_price":prices[model]["max_price_per_million"]}}
+            "provider":provider_cfg}
         if model=="deepseek/deepseek-v3.2":
             payload["reasoning"]={"enabled":False}
         # The paid-key endpoint has a rate window. Leave at least 3.8 seconds
@@ -308,9 +320,12 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
             print(json.dumps({"pilot_progress":len(records),"of":SAMPLE_COUNT,
                 "cost_usd":state["cost_usd"],"invalid":sum(
                     r["attempt_status"] not in ("valid_Q","valid_N") for r in records)}),flush=True)
-        if mode=="live" and meta["provider_route"] and meta["provider_route"]!=PINNED_PROVIDERS[model]:
-            state["status"]="STOP_PINNED_PROVIDER_ROUTE_MISMATCH"
-            break
+        if mode=="live" and meta["provider_route"]:
+            accepted=(DEEPSEEK_PILOT_PROVIDERS if model=="deepseek/deepseek-v3.2"
+                      else [PINNED_PROVIDERS[model]])
+            if meta["provider_route"] not in accepted:
+                state["status"]="STOP_UNAUTHORIZED_PROVIDER_ROUTE"
+                break
         if stop_on_metadata_missing and meta["provider_route"] is None:
             state["status"]="STOP_NO_PROVIDER_PROVENANCE"
             break
