@@ -1,0 +1,12 @@
+{
+  "source_run_id": 38048999477,
+  "source_completed_trials": 396,
+  "source_checkpoint_cost_usd": 0.05004672,
+  "failed_trial_index": 396,
+  "failed_reason": "OpenRouter HTTP429 upstream or platform rate limit",
+  "rejected_attempt_liability_usd_previous": 0.18,
+  "backoff_policy": "bounded 2 retries per HTTP429 with Retry-After and conservative liability reservations",
+  "remove_global_sleep": true,
+  "defer_provider_metadata": true,
+  "unchanged_pilot_budget_usd": 0.75
+}
