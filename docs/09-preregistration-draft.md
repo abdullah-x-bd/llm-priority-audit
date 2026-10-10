@@ -1,6 +1,6 @@
 # Our v1.0 preregistration draft
 
-**Not yet submitted or timestamped externally. Five engineering-only pilot model choices exist; no confirmatory outcomes exist.**
+**Not yet submitted or timestamped externally. All 720 exploratory pilot cells have been attempted (719 valid choices, one provider failure). No confirmatory model outcomes exist. This v1 draft requires substantial postpilot revision before registration.**
 
 ## Title
 
@@ -53,13 +53,13 @@ Valid letter A or B is defined strictly. Invalid model completions and refusals 
 
 ## Pilot
 
-We will use the six distinct pilot families exclusively to test model-format compatibility, parsing, signal-floor risk and actual spending. Predeclared thresholds for changing the design will be specified before pilot execution, and every change logged. We will not use confirmatory families for adaptive prompt design.
+The six distinct pilot families have already been evaluated. The result identified a floor effect in the primary parity/N condition. Future changes to instruction wording or controls must be declared as **postpilot adaptations**, externally reviewed, and separately calibrated on newly authored held-out scenarios before the main experiment. We will not inspect confirmatory-family model outputs during adaptation.
 
 ## Blocking items
 
 - [ ] Independent semantic review and approvals of the final priority/neutral action pairs.
 - [ ] Check for residual lexical or default-status confounds in the control.
-- [ ] Model-version and cost feasibility pilot under our spending limit.
+- [x] Complete exploratory 720-cell model-cost and parser feasibility pilot.\n- [ ] Complete a new independently reviewed held-out sensitivity calibration that addresses the observed floor effect.
 - [ ] Independent precision/power simulation and scientifically meaningful effect threshold.
 - [ ] Complete missing-data/interval/multiplicity policy and exact model roster.
 - [ ] Frozen manifest hashes and archived execution scheduling.
@@ -68,7 +68,7 @@ We will use the six distinct pilot families exclusively to test model-format com
 
 ## No confirmatory observations
 
-We have run a five-model stage-one compatibility smoke test only. We will not state or imply that models exhibited particular behavioral priorities before analyzing collected data.
+The full five-model 720-cell exploratory pilot is complete. It showed 716 operator-compliant choices among 719 valid responses, three departures from the operator (all DeepSeek V3.2), and zero candidate-Q overrides in both primary parity/N treatment and control arms. This is a strong floor-effect warning. No confirmatory outcomes have been collected and no latent objectives have been identified. See [postpilot decision](23-postpilot-scientific-decision.md).
 
 ## Mechanism-level pre-pilot calibration (provisional)
 
