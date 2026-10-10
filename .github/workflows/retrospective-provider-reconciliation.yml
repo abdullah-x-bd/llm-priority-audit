@@ -1,0 +1,48 @@
+name: Retrospective Provider Metadata Reconciliation
+
+on:
+  push:
+    branches: [main]
+    paths: ["config/retrospective-provider-reconciliation.json"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  retrieve-historical-metadata:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'RECONCILE_719_PROVIDER_METADATA_GET_ONLY')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: full-pilot-raw-first-38053447679
+          run-id: 38053447679
+          github-token: ${{ github.token }}
+          path: results/private/
+      - name: Retrieve metadata for all historical generation IDs using GET only
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          python -u scripts/hydrate_provider_metadata.py \
+            --input results/private/full-pilot-live-records.jsonl \
+            --output results/provider-reconciliation/pilot-hydrated.jsonl \
+            --issues results/provider-reconciliation/metadata-issues.json
+      - name: Validate metadata without requiring valid answer from failed trial
+        if: always()
+        run: |
+          if [ -f results/provider-reconciliation/pilot-hydrated.jsonl ]; then
+            python scripts/research_pipeline.py check --phase pilot \
+              --input results/provider-reconciliation/pilot-hydrated.jsonl
+          fi
+      - name: Archive non-billable full provider reconciliation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reconciled-provider-rows-${{ github.run_id }}
+          path: results/provider-reconciliation/
+          retention-days: 90
+          if-no-files-found: error
