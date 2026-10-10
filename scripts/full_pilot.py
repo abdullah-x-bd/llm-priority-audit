@@ -337,21 +337,51 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
             "provider":provider_cfg}
         if model=="deepseek/deepseek-v3.2":
             payload["reasoning"]={"enabled":False}
-        # The paid-key endpoint has a rate window. Leave at least 3.8 seconds
-        # between requests (in addition to model and metadata latency) to keep
-        # live throughput conservative across all five models.
-        if mode=="live":
-            time.sleep(3.8)
-        # Persist BEFORE making an externally billable request. Replays with an
-        # unresolved inflight are forbidden, preventing accidental double charges.
-        state["inflight"]={"index":index,"model":model,"trial_id":trial["trial_id"],
-                           "started_utc":now(),"reservation_usd":reserve}
-        save(checkpoint,state)
-        try:
-            response=transport.request("/chat/completions",payload)
-        except APIProblem as ex:
-            state["status"]="STOP_UNCERTAIN_CHARGE_"+str(ex)
+        # No blanket sleep. Paid-model limits vary by serving provider.
+        # Only a typed HTTP429 can trigger a bounded, audited backoff retry.
+        # Transport or ambiguous billing errors still stop without a retry.
+        retries=0
+        while True:
+            state["inflight"]={"index":index,"model":model,"trial_id":trial["trial_id"],
+                               "started_utc":now(),"reservation_usd":reserve}
             save(checkpoint,state)
+            try:
+                response=transport.request("/chat/completions",payload)
+                break
+            except APIProblem as ex:
+                is_rate_limit=(ex.http_status==429 or str(ex).startswith("HTTP_429"))
+                if mode=="live" and is_rate_limit and retries<2:
+                    retry_after=ex.retry_after
+                    if retry_after is not None and retry_after>180:
+                        state["status"]="STOP_RETRY_AFTER_EXCEEDS_180_SECONDS"
+                        save(checkpoint,state)
+                        break
+                    # Treat even rejected 429 as a potential $0.03 liability.
+                    if STAGE1_COST+spent+unknown_reserve+2*reserve>BUDGET+1e-10:
+                        state["status"]="STOP_BUDGET_BEFORE_429_RETRY"
+                        save(checkpoint,state)
+                        break
+                    state.setdefault("rejected_attempts",[]).append({
+                        "reason":str(ex),
+                        "inflight":dict(state["inflight"]),
+                        "disposition":"Rate-limited HTTP429, no completion body; bounded retry with liability reserve",
+                        "acknowledged_utc":now(),
+                        "retry_after_seconds":retry_after})
+                    unknown_reserve+=reserve
+                    state["unresolved_rejection_reserve_usd"]=round(unknown_reserve,8)
+                    state["inflight"]=None
+                    state["status"]="BACKING_OFF_HTTP429"
+                    save(checkpoint,state)
+                    delay=max(30*(2**retries),retry_after or 0)
+                    print(json.dumps({"backoff_reason":"HTTP429","trial_index":index,
+                                      "delay_seconds":delay,"retry":retries+1}),flush=True)
+                    time.sleep(delay)
+                    retries+=1
+                    continue
+                state["status"]="STOP_UNCERTAIN_CHARGE_"+str(ex)
+                save(checkpoint,state)
+                break
+        if state["status"].startswith("STOP_"):
             break
         # Persist mismatched response provenance BEFORE strict validation.
         # This prevents another ambiguous model revision from disappearing.
@@ -373,7 +403,12 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
             state["status"]="STOP_CHARGE_EXCEEDS_RESERVATION"
             save(checkpoint,state)
             break
-        meta=metadata(transport,res["completion_id"])
+        # GET /generation is eventually consistent and sometimes returns
+        # 404 just after creation. Defer its many non-billable calls to the
+        # existing post-collection hydration workflow.
+        meta=(metadata(transport,res["completion_id"]) if mode=="mock" else
+              {"provider_route":None,"generation_cost":None,
+               "metadata_error":"DEFERRED_TO_POST_COLLECTION"})
         record=canonical(model,trial,payload,res,meta)
         validate_row(record,"pilot",{trial["trial_id"]:trial})
         records.append(record)
