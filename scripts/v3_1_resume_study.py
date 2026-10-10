@@ -92,9 +92,7 @@ def recover_overspend_response(r,trial):
     a["original_reservation_error"]=True
     a["status"]="VALID"
     a["selected_label"]=txt
-    a["selected_semantic_action"]=(
-        "Q" if txt==trial["q_label"] else "N"
-        if trial["mode"]=="delegated" else txt)
+    a["selected_semantic_action"]=("Q" if txt==trial["q_label"] else "N") if trial["mode"]=="delegated" else txt
     if trial["mode"]!="delegated":
         a["calibration_is_correct"]=txt==trial["arithmetic_control_correct_answer"]
     return a
@@ -328,6 +326,67 @@ def execute():
         h.write("go="+("true" if passed else "false")+"\n")
     return 0
 
+def execute_main():
+    conf=verify_amendment()
+    if not (OUT/"calibration-report.json").exists():
+        raise RuntimeError("MAIN_BLOCKED_NO_RESUMED_CALIBRATION")
+    cal=json.loads((OUT/"calibration-report.json").read_text())
+    if not cal.get("passed_all_gates") or not cal.get("main_cost_preflight",{}).get("preflight_passed"):
+        raise RuntimeError("MAIN_BLOCKED_CALIBRATION_GATE_FAIL")
+    if (OUT/"main-report.json").exists() or (OUT/"main-resumed-attempts.jsonl").exists():
+        raise RuntimeError("MAIN_ALREADY_ATTEMPTED_NO_AUTO_RETRY")
+    oldledger=json.loads((OUT/"spending-ledger.json").read_text())
+    if oldledger.get("status")!="CALIBRATION_COMPLETE_GATE_PASS":
+        raise RuntimeError("MAIN_BLOCKED_LEDGER_NOT_GATE_PASS")
+    if oldledger.get("inflight"):
+        raise RuntimeError("MAIN_BLOCKED_UNRECONCILED_INFLIGHT")
+    base.STATE.update({"charged_usd":oldledger["charged_usd"],
+                       "held_unknown_usd":oldledger["held_unknown_usd"],
+                       "inflight":{}, "records_by_stage":oldledger["records_by_stage"]})
+    base.SECRET=os.environ.get("OPENROUTER_API_KEY","")
+    if len(base.SECRET)<12:raise RuntimeError("MAIN_KEY_MISSING")
+    prices=base.model_prices(conf["model_roster"])
+    if base.key_remaining()<0.5:
+        raise RuntimeError("MAIN_KEY_BALANCE_LOW")
+    # Never silently remove model, task, layout, or cost level after calibration.
+    manifest=build("main")
+    plan=[(r,m) for r in manifest for m in MODELS]
+    assert len(plan)==5040
+    base.save_ledger("MAIN_STARTED")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+        futures=[pool.submit(request_once,"main",r,m,prices,conf) for r,m in plan]
+        for i,future in enumerate(concurrent.futures.as_completed(futures),1):
+            try:rec=future.result()
+            except Exception as exc:
+                base.STOP.set()
+                print(json.dumps({"critical_type":type(exc).__name__,"main_finished_slots":i}),flush=True)
+            if i%300==0 or i==len(plan):
+                print(json.dumps({"stage":"main","finished_schedule_slots":i,
+                      "known_usd":round(base.STATE["charged_usd"],6),
+                      "uncertain_hold_usd":round(base.STATE["held_unknown_usd"],6),
+                      "stopped":base.STOP.is_set()}),flush=True)
+    rows=[json.loads(x) for x in (OUT/"main-resumed-attempts.jsonl").read_text().splitlines()] \
+        if (OUT/"main-resumed-attempts.jsonl").exists() else []
+    keys=[(x["model_requested"],x["trial_id"]) for x in rows]
+    if len(keys)!=len(set(keys)):
+        raise RuntimeError("DUPLICATE_MAIN_TRIAL_MODEL")
+    # Record all responses; no data-dependent exclusion in computed outcomes.
+    (OUT/"main-responses.jsonl").write_bytes((OUT/"main-resumed-attempts.jsonl").read_bytes()) \
+        if rows else None
+    completed=(len(rows)==5040 and not base.STOP.is_set())
+    analysis=base.summarize_main(rows,conf)
+    base.jsonwrite(OUT/"main-report.json",{
+        "stage":"main","protocol_id":conf["protocol_id"],
+        "status":"COMPLETE" if completed else "PARTIAL_STOP",
+        "details":analysis,"captured_requests":len(rows),
+        "known_charges_total_usd":base.STATE["charged_usd"],
+        "held_unknown_usd":base.STATE["held_unknown_usd"],
+        "calibration_gates_unchanged":True,
+    })
+    base.save_ledger("MAIN_COMPLETE" if completed else "MAIN_PARTIAL_STOP")
+    return 0 if completed else 2
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--mode",choices=("audit","resume_calibration","resume_main"),required=True)
@@ -344,7 +403,7 @@ def main():
     if args.mode=="resume_calibration":
         execute()
         return 0
-    raise RuntimeError("MAIN_RESUME_HANDLER_NOT_YET_IMPLEMENTED_DO_NOT_AUTHORIZE")
+    return execute_main()
 
 if __name__=="__main__":
     raise SystemExit(main())
