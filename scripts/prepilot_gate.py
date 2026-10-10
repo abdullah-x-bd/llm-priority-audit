@@ -70,17 +70,21 @@ def report():
       "Preregistered inference and power claims await compatibility-pilot measurements",
       "Preregistered prompts, analysis, manifest hashes and registrations not frozen",
     ])
-    # Paid calls require a separate implementation that can enforce a wallet
-    # and per-request reserve; the current repository has no network runner.
-    paid_pilot_blockers=[]
-    if engineering_blockers:
-        paid_pilot_blockers.extend(engineering_blockers)
-    paid_pilot_blockers.append(
-        "No validated API runner enforcing $0.75 pilot/$8 total hard spend ceilings")
-    paid_pilot_blockers.append(
-        "Endpoint token accounting, parser and route stability not yet tested")
+    # The 720-cell v1 exploratory pilot is complete, with zero events in
+    # both primary parity/N arms. A NEW calibration run requires new approval.
+    confirmatory_blockers.extend([
+        "Actual completed primary pilot had zero overrides in both frames (floor effect)",
+        "New instruction variants await independent construct review",
+        "Six new calibration source pairs await external review and sensitivity approval",
+        "Model/provider and missing-data methods require frozen preregistration",
+    ])
+    paid_pilot_blockers=list(engineering_blockers)
+    paid_pilot_blockers.extend([
+        "Completed 720-cell pilot does not authorize additional paid calibration",
+        "Six draft calibration families lack independent reviewer signatures",
+    ])
     return {
-      "stage":"offline audit before OpenRouter compatibility implementation",
+      "stage":"post-720-cell exploratory pilot; future paid work and main run on hold",
       "offline_engineering_checks_passed":not engineering_blockers,
       "ready_to_implement_compatibility_runner":not engineering_blockers,
       "ready_for_paid_pilot":not paid_pilot_blockers,
