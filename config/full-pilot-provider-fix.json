@@ -1,0 +1,7 @@
+{
+  "prior_failed_run": 38045137979,
+  "source_generation_route": "DeepInfra",
+  "provider_route_policy": "five_providers_pinned_to_stage1",
+  "authorized_resume": true,
+  "pilot_cap": 0.75
+}
