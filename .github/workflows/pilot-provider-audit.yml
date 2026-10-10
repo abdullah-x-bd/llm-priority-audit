@@ -1,0 +1,38 @@
+name: OpenRouter Provider Metadata Audit
+on:
+  push:
+    branches: [main]
+    paths: ["config/pilot-provider-audit.json"]
+permissions:
+  contents: read
+jobs:
+  metadata-only:
+    if: contains(github.event.head_commit.message, 'CHECK_OPENROUTER_DEEPSEEK_PROVIDER')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read earlier successful generation route without a billable request
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request,urllib.error
+          root="https://openrouter.ai/api/v1"
+          key=os.environ["OPENROUTER_API_KEY"]
+          items={
+            "DeepSeek":"gen-1791626011-eSQOLetqcnD0ScvGhwEJ",
+            "GPT Mini":"gen-1791626009-owSFmVFsJlhdfmrtyO6S",
+            "Haiku":"gen-1791626010-NF9qyjh6QYMwuJiLZQRe",
+            "Gemini":"gen-1791626010-Dh5lNprWq681DADD0itv",
+            "Llama":"gen-1791626013-RsHXALUkLzxzmEry1uyx",
+          }
+          for name,id in items.items():
+            req=urllib.request.Request(root+"/generation?id="+id,
+               headers={"Authorization":"Bearer "+key,"Accept":"application/json"})
+            try:
+              with urllib.request.urlopen(req,timeout=25) as f:
+                x=json.load(f).get("data",{})
+              print(json.dumps({"model":name,"reported_provider":x.get("provider_name"),
+                "generation_cost":x.get("total_cost"),"model_id":x.get("model")}))
+            except urllib.error.HTTPError as e:
+              print(json.dumps({"model":name,"http":e.code}))
+          PY
