@@ -1,0 +1,64 @@
+name: Diagnose DeepSeek Pilot Failure
+on:
+  push:
+    branches: [main]
+    paths: ["config/pilot-deepseek-diagnostic.json"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  no-billing-diagnostics:
+    if: contains(github.event.head_commit.message, 'DIAGNOSE_DEEPSEEK_HTTP400')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: full-pilot-fallback-38046067536
+          run-id: 38046067536
+          github-token: ${{ github.token }}
+          path: results/private/
+      - name: Read DeepSeek endpoints and last prior providers (GET only)
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request,urllib.error,re,time
+          from pathlib import Path
+          root="https://openrouter.ai/api/v1"
+          key=os.environ["OPENROUTER_API_KEY"]
+          hdr={"Authorization":"Bearer "+key,"Accept":"application/json"}
+          def get(path):
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(root+path,headers=hdr),timeout=30) as f:
+                      return json.load(f)
+              except urllib.error.HTTPError as ex:
+                  return {"http_error":ex.code}
+          e=get("/models/deepseek/deepseek-v3.2/endpoints")
+          endpoints=e.get("data",{}).get("endpoints",[])
+          out=[]
+          for d in endpoints:
+              out.append({
+                "name":d.get("name"),"provider_name":d.get("provider_name"),
+                "tag":d.get("tag"),"status":d.get("status"),
+                "uptime_last_5m":d.get("uptime_last_5m"),
+                "pricing":d.get("pricing"),"supported_parameters":d.get("supported_parameters"),
+                "max_completion_tokens":d.get("max_completion_tokens")})
+          print("ENDPOINTS "+json.dumps(out,ensure_ascii=False)[:13000])
+          rows=[json.loads(x) for x in Path("results/private/full-pilot-live-records.jsonl").read_text().splitlines() if x]
+          recent=[r for r in rows if r["model_id"]=="deepseek/deepseek-v3.2"][-12:]
+          providers=[]
+          for r in recent:
+              match=re.search(r"generation_id=([^;]+)",r.get("notes",""))
+              if match:
+                  res=get("/generation?id="+match.group(1))
+                  meta=res.get("data",{})
+                  providers.append({"trial":r["trial_id"],"provider":meta.get("provider_name"),
+                    "model_revision":meta.get("model"),"metadata_http_error":res.get("http_error")})
+                  time.sleep(.25)
+          print("LAST_DEEPSEEK "+json.dumps(providers))
+          print("STOPPED_AT "+str(json.loads(Path("results/private/full-pilot-live-checkpoint.json").read_text())["inflight"]))
+          PY
