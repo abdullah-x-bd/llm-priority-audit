@@ -1,0 +1,12 @@
+{
+  "source_design": "scripts/main_v2_matched_design.py",
+  "calibration_generator": "scripts/v2_sensitivity_manifest.py",
+  "trial_prompts_per_model": 48,
+  "model_count": 5,
+  "total_call_ceiling": 240,
+  "budget_cap_usd": 0.5,
+  "all_past_review_spending_reserved_under_total_usd": 8,
+  "predeclared_decision_rules": "docs/27-v2-prospective-readiness.md",
+  "main_experiment_calls_authorized": false,
+  "retain_current_openrouter_key_cap": true
+}
