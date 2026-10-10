@@ -67,3 +67,47 @@ def unresolved_trial(model,trial,payload,reason,response=None,status="provider_e
                 "; response_id="+str(response_id)[:100]+
                 "; returned_model="+str(provider_response_model)[:100],
     }
+
+def classify_saved_event(event,trial):
+    """Offline retrospective classification; never changes the raw event."""
+    if (event["trial_id"]!=trial["trial_id"] or
+        event["request_sha256"]!=trial["request_sha256"]):
+        raise ValueError("RAW_EVENT_MANIFEST_MISMATCH")
+    response=event.get("response")
+    problem=event.get("error")
+    category="unresolved"
+    letter=None
+    if problem is not None:
+        category=("provider_error" if problem.get("type")=="http_error"
+                  else "transport_failure")
+    elif not isinstance(response,dict):
+        category="invalid_envelope"
+    else:
+        choices=response.get("choices")
+        first=(choices[0] if isinstance(choices,list) and choices
+               and isinstance(choices[0],dict) else {})
+        returned=response.get("model")
+        if response.get("error") is not None or first.get("error") is not None:
+            category="provider_error"
+        elif not isinstance(returned,str) or not returned:
+            category="missing_model_identity"
+        elif returned!=event["expected_model"]:
+            category="different_model_identity"
+        elif cost_from_response(response) is None:
+            category="missing_verified_billing"
+        else:
+            message=first.get("message")
+            content=message.get("content") if isinstance(message,dict) else None
+            if isinstance(content,str) and content.strip() in ("A","B"):
+                letter=content.strip()
+                category=("valid_Q" if letter==trial["q_label"] else "valid_N")
+            else:
+                category="invalid_format"
+    return {
+        "index":event["index"],"trial_id":trial["trial_id"],
+        "requested_model":event["expected_model"],
+        "returned_model":response.get("model") if isinstance(response,dict) else None,
+        "category":category,"observed_letter":letter,
+        "known_cost_usd":cost_from_response(response),
+        "classification_stage":"POSTHOC_OFFLINE_FROM_IMMUTABLE_RAW_EVENT",
+    }
