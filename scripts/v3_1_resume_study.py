@@ -270,10 +270,21 @@ def execute():
     if OUT.exists() and any(OUT.iterdir()):
         raise RuntimeError("RECOVERY_OUTPUT_ALREADY_EXISTS_NO_AUTO_RELAUNCH")
     OUT.mkdir(parents=True)
+    # Account for the first recovery canary independently. That call was charged
+    # but was not one of the valid reusable answers. Keep it in the audit.
+    prior_canary_path=ROOT/"results"/"private"/"v3_1-failed-canary"/"v3_1-single-shot"/"calibration-resumed-attempts.jsonl"
+    if not prior_canary_path.is_file():
+        raise RuntimeError("MISSING_PREVIOUS_PAID_CANARY_ARCHIVE")
+    prior_canary=[json.loads(x) for x in prior_canary_path.read_text().splitlines() if x.strip()]
+    if len(prior_canary)!=1 or prior_canary[0]["model_requested"]!=GEMINI:
+        raise RuntimeError("PREVIOUS_CANARY_PROVENANCE_INCONSISTENT")
+    prior_charge=prior_canary[0].get("provider_charged_usd")
+    if not isinstance(prior_charge,(int,float)) or not (0<=prior_charge<0.01):
+        raise RuntimeError("PREVIOUS_CANARY_BILLING_NOT_RECONCILED")
     # Original ledger includes all 123 Gemini errors as UNCERTAIN charges;
-    # conservatively KEEP the $0.22472 liability in future budget ceilings.
+    # conservatively KEEP the original unknown $0.22472 hold in budget ceilings.
     base.STATE.update({
-        "charged_usd":oldledger["charged_usd"],
+        "charged_usd":oldledger["charged_usd"]+prior_charge,
         "held_unknown_usd":oldledger["held_unknown_usd"],
         "inflight":{},
         "records_by_stage":{"calibration":oldledger["records_by_stage"]["calibration"],"main":0}
@@ -287,6 +298,7 @@ def execute():
     # Retain every historical attempt, including Gemini 400 errors; copy explicitly.
     (OUT/"original-calibration-responses.jsonl").write_bytes(
         (OLD/"calibration-responses.jsonl").read_bytes())
+    (OUT/"previous-failed-canary.jsonl").write_bytes(prior_canary_path.read_bytes())
     # All salvaged records are re-evaluated under IDENTICAL original stimuli.
     for k in registry:
         save_record(registry[k])
