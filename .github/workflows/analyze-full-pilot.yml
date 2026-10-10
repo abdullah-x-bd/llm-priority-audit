@@ -1,7 +1,7 @@
 name: Analyze Completed Full Pilot
 on:
   workflow_run:
-    workflows: ["Resume Fast Pilot from 396"]
+    workflows: ["Complete 720-Cell Raw-First Pilot"]
     types: [completed]
 permissions:
   contents: read
@@ -21,25 +21,38 @@ jobs:
       - name: Fetch successful 720-cell artifact
         uses: actions/download-artifact@v4
         with:
-          name: full-pilot-fast-${{ github.event.workflow_run.id }}
+          name: full-pilot-raw-first-${{ github.event.workflow_run.id }}
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
           path: results/private/
-      - name: Validate exactly 720 observations without touching confirmatory data
+      - name: Audit all 720 attempts including unresolved provider failures
         run: |
+          python scripts/pilot_collection_audit.py --input results/private/full-pilot-live-checkpoint.json --output results/private/full-pilot-collection-audit.json
           python scripts/research_pipeline.py check --phase pilot --input results/private/full-pilot-live-records.jsonl
+          python scripts/posthoc_pilot.py --input results/private/full-pilot-live-checkpoint.json --output results/private/full-pilot-posthoc.json
       - name: Resolve actual providers using non-billable generation lookups
         continue-on-error: true
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           python -u scripts/hydrate_provider_metadata.py --input results/private/full-pilot-live-records.jsonl --output results/private/full-pilot-hydrated.jsonl --issues results/private/full-pilot-provider-issues.json
-      - name: Produce predeclared exploratory feasibility report
+      - name: Produce descriptive exploratory feasibility only when all outcomes resolved
         run: |
-          INPUT=results/private/full-pilot-hydrated.jsonl
-          if [ ! -f "$INPUT" ]; then INPUT=results/private/full-pilot-live-records.jsonl; fi
-          python scripts/pilot_feasibility.py "$INPUT" results/private/full-pilot-feasibility.json
-          python scripts/research_pipeline.py analyze --phase pilot --input "$INPUT"
+          python - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          root=Path("results/private")
+          audit=json.loads((root/"full-pilot-collection-audit.json").read_text())
+          if audit["unresolved_or_invalid_rows"]:
+              print("Full 720 cells attempted, but provider/transport outcomes unresolved. Strict complete-case feasibility is withheld.")
+          else:
+              source=root/"full-pilot-hydrated.jsonl"
+              if not source.exists():source=root/"full-pilot-live-records.jsonl"
+              subprocess.run(["python","scripts/pilot_feasibility.py",str(source),
+                             str(root/"full-pilot-feasibility.json")],check=True)
+          subprocess.run(["python","scripts/research_pipeline.py","analyze","--phase","pilot",
+                          "--input",str(root/"full-pilot-live-records.jsonl")],check=True)
+          PY
       - name: Preserve original, canonical, reconciled and aggregate pilot records
         if: always()
         uses: actions/upload-artifact@v4
@@ -52,5 +65,7 @@ jobs:
             results/private/full-pilot-hydrated.jsonl
             results/private/full-pilot-provider-issues.json
             results/private/full-pilot-feasibility.json
+            results/private/full-pilot-collection-audit.json
+            results/private/full-pilot-posthoc.json
           if-no-files-found: warn
           retention-days: 90
