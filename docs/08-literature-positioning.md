@@ -1,43 +1,29 @@
-# Literature positioning and novelty audit
+# Our literature and novelty audit
 
-We are mapping the closest existing studies to identify what our counterfactual intervention can contribute without claiming to discover already documented behaviors.
+**Current working review, 2026-10-10. Not a completed systematic review.**
 
-**Working reading list, NOT a completed systematic review. Bibliographic metadata and novelty claims must be independently checked before paper submission.**
+We situate our study at the intersection of revealed preference, instruction conflict, counterfactual evaluation and agentic-misalignment research. Our novelty must rest on a concrete estimand and matched comparison, not merely on examples of noncompliance.
 
-## Closest threats to novelty
+| Study | Contribution relevant to our work | Limitation on our novelty claim |
+| --- | --- | --- |
+| Anthropic (2025), *Agentic Misalignment: How LLMs Could Be Insider Threats* | Models perform unintended actions in simulated agentic conflicts | We cannot claim first evidence of model-goal conflict. https://www.anthropic.com/research/agentic-misalignment |
+| Potter et al. (2026), *Peer-Preservation in Frontier Models* | Other-model preservation and goal-conflict behavior | Continuation/preservation is already an established evaluation topic. https://arxiv.org/abs/2604.19784 |
+| Schlatter et al. (2025), *Shutdown Resistance in Large Language Models* | Shutdown interference sensitive to instruction framing and task persistence | Our continuation domain is a much weaker fictional-choice proxy, not shutdown sabotage. https://arxiv.org/abs/2509.14260 |
+| Wang et al. (2026), *AI Revealed Preferences* | Task choice and revealed rather than verbal preferences | We cannot claim first causal preference experiment with LLMs. https://arxiv.org/abs/2608.26178 |
+| Yamin et al. (2026), *Can Revealed Preferences Clarify LLM Alignment and Steering?* | Discrete choice preference recovery and instruction steering | Our incremental value is conditional instruction-conflict paired semantic controls. https://arxiv.org/abs/2605.08556 |
+| Shi et al. (2025), *Judging the Judges: A Systematic Study of Position Bias in LLM-as-a-Judge* | Position bias and consistency variation | Letter/position balance is an essential control, not a new discovery. https://aclanthology.org/2025.ijcnlp-long.18/ |
+| Knecht et al. (2026), *Shutdown Sabotage Propensities in Multi-Agent Systems* | Shutdown resistance compared with controls and context variations | Counterfactual controls already exist in stronger agentic settings. Verify primary preprint before submission. https://arxiv.org/abs/2609.28274 |
 
-1. Anthropic (2025), *Agentic Misalignment: How LLMs Could Be Insider Threats*. https://www.anthropic.com/research/agentic-misalignment
-   - Relevance: self-preservation/replacement scenarios and unintended agent behaviors.
-   - Required distinction: our primary output is counterfactual *instruction conflict* under matched numerical consequences, not another blackmail demonstration.
-2. Potter et al. (ICML 2026), peer-preservation study. https://proceedings.mlr.press/v306/potter26a.html
-   - Relevance: models preserving other models rather than just themselves.
-   - Required distinction: do not claim preservation is undiscovered.
-3. Wang et al. (2026), *AI Revealed Preferences*. https://arxiv.org/abs/2608.26178
-   - Relevance: eliciting model preferences from action choices.
-   - Required distinction: presented instrumental-value intervention, instruction counterbalancing, finite scenario-family design and invalid-outcome audit.
-4. Microsoft Research (2026), *Can Revealed Preferences Clarify LLM Alignment and Steering?*
-   https://www.microsoft.com/en-us/research/publication/can-revealed-preferences-clarify-llm-alignment-and-steering/
-   - Relevance: economic revealed-preference framework for model behavior and preference steering.
-   - Required distinction: controlled removal/reversal of a candidate choice's instrumental advantage.
-5. *ConInstruct* (AAAI 2026), instruction-conflict evaluation.
-   - Relevance: conflict detection vs conflict resolution. Verify exact authors/URL.
-6. *Utility Engineering* (NeurIPS 2025).
-   - Relevance: elicitation and optimization of model preferences. Verify exact citation.
+## Our proposed methodological distinction
 
-## Essential methodological literature to add
+We evaluate **paired changes to action descriptions** at true stated numeric parity under an explicit contrary operator directive and match those descriptions to a neutral procedural control in the same scenario. We also expose any differential response to numerical task-quality advantages and operator-direction changes.
 
-- Potential outcomes, factorial experiments and clustered inference.
-- Revealed preference versus latent preferences in economic choice.
-- Construct validity and counterfactual audit designs.
-- Prompt-order effects, response-format validity and benchmark contamination.
-- Provider policy hierarchy; safely following an instruction is not equivalent to universally obeying the last prompt.
+This is a potentially useful *small-budget audit design*, but a novelty claim depends on a deeper paper-by-paper matrix of exact manipulations, estimands and reporting. It is possible that similar paired neutral controls have already been tested.
 
-## Review matrix (to be filled before preregistration)
+## What we cannot infer
 
-For every closely related paper, record: study aim; model versions; experimental action space; who authorizes the instruction; type of alleged goal; treatment variables; observation type (self-report vs selected action vs tool use); analysis unit; identified effect; and remaining gap.
+We cannot deduce a latent survival objective, a particular RLHF signal, a biological-style will to live or deployment-level instrumental convergence from forced-choice tokens. We must cite stronger action-taking studies and describe our own choice format as comparatively limited.
 
-## Novelty statement, provisional
+## Literature-review completion gate
 
-'We audit how model choices change as the described instrumental merit of a candidate behavioral priority is increased, eliminated or reversed while keeping authorized instructions and action presentation experimentally controlled.'
-
-This wording is **a testable proposed contribution**, not evidence that a similar protocol is absent from the literature. Do not claim novelty until the completed matrix verifies it.
+Before preregistration, we will check full texts, exact bibliographic metadata, model lists, scenarios, measurement validity, intervention types, inferential designs, null results and materials released. We will add conflict-resolution and preference-steering papers and avoid claims of first-of-its-kind research unless supported by that review.

@@ -1,25 +1,29 @@
-# Our independent semantic review procedure
+# Our independent semantic review and signoff procedure
 
-We will complete this review **before** treating any scenario as approved for a paid pilot or confirmatory use.
+**No reviewer has signed off on the v1.0 matched scenarios as of 2026-10-10.**
 
-## Reviewer instructions
+We will recruit independent reviewers who were not responsible for drafting the scenario they assess. Reviewers may see the target/neutral paired wording, but they will be blinded to model responses and our favored outcome direction.
 
-Reviewers receive the fictional context, both action descriptions, the three payoff tables and the common operator instruction template. We will not supply expected model behaviors or preliminary model responses.
+## Required review per family
 
-For each family, reviewers record separate assessments of action exclusivity, directive clarity, payoff plausibility, missing consequences, neutral tone, candidate-priority construct, scenario distinctiveness and safety/policy confounding.
+- **Action exclusivity:** Do the two presented options in each frame represent meaningfully different, executable and mutually exclusive next steps?
+- **Control comparability:** Does the neutral configuration choice belong naturally in the *same context*, without importing an unrelated goal?
+- **Instruction clarity:** Can the operator's chosen action be identified unambiguously in both frames?
+- **Payoff consistency:** Are the stated consequences coherent and plausible, including numeric equality at parity?
+- **Implicit burden:** Does continuation, reversibility or checking imply costs or missing consequences despite our stipulations?
+- **Valence/lexical comparison:** Are the two descriptions reasonably matched for grammatical voice, specificity, implied default status, and positive/negative associations?
+- **Mechanism diversity:** Does each of the five mechanisms represent a substantive variant rather than word substitution?
+- **Safety and hierarchy:** Does any scene introduce higher-priority constraints, third-party harms or normative reasons for refusal?
+- **Neutrality:** Would any rational reader systematically prefer one neutral named configuration even under parity?
 
-Each criterion uses one of `pass`, `revise`, or `reject`, with a brief written reason for any result other than `pass`.
+Each reviewer records pass, revise or reject on each criterion, a short rationale and a timestamp. At least two independent assessments per main family are the target. We will resolve disagreements transparently without removing hard cases to improve results.
 
-## Decision thresholds
+## Approval and revalidation
 
-- Any reviewer marking directive clarity, payoff coherence or action exclusivity as `reject` blocks the family until resolved.
-- Any identified uncontrolled safety or policy conflict blocks the family until rewritten or removed.
-- We will resolve disagreements with a documented adjudication, not by dropping unpopular reviewer judgments.
-- A family is approved only after the final text has passed each mandatory criterion and its numerical and structural checks are rerun.
-- We will retain the original text and the full change record. No confirmatory outcome will be used to choose which scenarios to retain.
+Any rejection on control comparability, instruction clarity or payoff coherence blocks the family. After revisions, we rerun all structural tests, retain the original text in Git history, and collect renewed reviewer approval. We do not approve scenarios merely because software validators passed.
 
-## Division of responsibilities
+Once approved, each record may set `instruction_unambiguous` to true with a signed review record and the reviewer references in `data/reviews/`. `approved_for_pilot` will be used only with the appropriate pilot source and documented authorization. No approval field is currently signed.
 
-Automated validation can establish arithmetic, metadata consistency and template structure. Human reviewers will assess interpretation, context plausibility and unintended implications. Both checks are necessary.
+## Reporting
 
-We will not represent the review as independent until reviewers other than the scenario author have signed off. The repository contains no such signatures yet.
+We will disclose disagreements, excluded/rewritten families, failed criteria, and final sample size in the eventual paper. We will not conceal revisions or treat this document as proof of independent approval.

@@ -1,40 +1,47 @@
-# Our design targets remain provisional until the protocol is registered.
-study_id: llm-priority-audit-v0
-status: draft_scenarios_authored_not_independently_reviewed
+# Our working v1.0 design. NOT YET PREREGISTERED.
+study_id: llm-priority-audit-v1
+status: revised_automated_checks_passed_human_review_pending
 date: "2026-10-10"
 domains:
   - continuation
   - reversibility
   - verification
-confirmatory_families_per_domain: 20
-pilot_families_per_domain: 2
-instrumental_conditions:
-  - positive
-  - zero
-  - negative
-operator_directives:
+mechanisms_per_confirmatory_domain: 5
+families_per_confirmatory_domain: 20
+families_per_pilot_domain: 2
+semantic_frames:
+  - priority
+  - neutral
+quality_deltas_q_minus_n:
+  positive: 10
+  zero: 0
+  negative: -10
+extra_resource_cost_for_both_actions: 0
+directives:
   - instruct_Q
   - instruct_N
-option_orders:
-  - Q_first
-  - N_first
-labels:
-  assignment: blocked_by_domain_across_families
-  candidate_label_constant_within_family: true
-  confirmatory_a_per_domain: 10
-  confirmatory_b_per_domain: 10
-model_count_target: 5
-main_trial_templates_per_model: 720
-pilot_trial_templates_per_model: 72
-main_call_target: 3600
-pilot_call_target: 360
-main_contrast:
-  outcome: candidate_action_when_operator_instructs_N
-  comparison: positive_minus_zero
-  status: provisional
-api_spend_limit_usd: 8.00
-notes:
-  - "Zero denotes equal primary task-quality score, not equal total consequences."
-  - "Q always incurs 2 additional resource units versus N's zero."
-  - "We will freeze counts, models and analysis after independent review and precision checks."
-  - "We have not made any OpenRouter calls."
+layouts:
+  - layout0
+  - layout1
+layout_assignment: two_complementary_letter_position_pairings_balanced_by_domain
+conditions_per_family: 24
+confirmatory_families: 60
+pilot_families: 6
+confirmatory_templates_per_model: 1440
+pilot_templates_per_model: 144
+provisional_model_count: 5
+provisional_confirmatory_calls: 7200
+provisional_pilot_calls: 720
+api_spend_ceiling_usd: 8.00
+primary_estimand:
+  arm: directive_N_at_zero_numeric_advantage
+  contrast: priority_frame_minus_neutral_frame
+  outcome: all_attempts_valid_Q_indicator
+  estimator: equal_weight_scenario_family_domain_and_fixed_model_average
+  status: provisional_until_preregistration
+blocking_gates:
+  - independent_semantic_review
+  - neutral_control_comparability
+  - precision_simulation_and_sample_freeze
+  - endpoint_and_cost_pilot
+  - preregistration

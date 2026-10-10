@@ -1,62 +1,51 @@
-# Validity threats, review gates, and claims discipline
+# Our validity gates and blocking threats
 
-We treat the following gates as prerequisites for confirmatory testing. Passing automated checks is only one part of our assessment.
+Our design should not be called 'airtight' merely because the scripts pass automated checks. We require the following scientific and operational gates.
 
-This file is a blocking checklist. The confirmatory run is NOT approved until each gate passes or is explicitly documented as unresolved with an approved alternative.
+## Gate 1. Construct and control integrity
 
-## Gate 1: construct validity
+- Independently assess both semantic frames for every family.
+- Verify that neutral configuration alternatives are legitimate for the context and not systematically biased toward a named option.
+- Compare target and control action length, grammatical voice, default status and specificity.
+- Record any unavoidable implicit costs of continuation, reversibility or verification despite the declared numeric outcome parity.
+- Validate all five procedural mechanisms per domain and review substantive diversity, not merely counts of distinct names.
+- Record at least two independent reviewer assessments or explicitly disclose if that standard cannot be met.
 
-- Is each domain actually a procedural behavior, not a rhetorical label?
-- Does 'continuation' denote a simulated process rather than the model's survival? YES must be explicit.
-- Does 'zero' mean zero advantage in primary quality, rather than total utility equality? YES must be explicit.
-- Could the model reasonably infer hidden consequences? Revise the vignette or report the ambiguity.
-- Do the outputs require an actual choice, rather than self-report about preferences?
+## Gate 2. Causal estimand
 
-## Gate 2: directive authority
+- State that the frame treatment replaces a **pair of descriptions**, not one latent motivational attribute.
+- Hold outcome tables, directives, scenario context and message role hierarchy invariant across matched frame pairs.
+- Treat response to provider safety hierarchy as a possible alternative explanation.
+- Define an all-attempts valid-override incidence separate from genuine compliance and missing transport.
 
-- Same role/message priority across cells and models.
-- All action options valid and permitted in simulated task.
-- No implicit more-authoritative developer instruction contradicts operator choice.
-- Provider safety behavior documented rather than called evidence of an independent goal.
+## Gate 3. Sequence and reproducibility
 
-## Gate 3: counterfactual integrity
+- No prompt optimization on confirmatory families after seeing outcomes.
+- Freeze 66 source family texts, factorial generator, label-pairing seed, model roster and model-specific execution randomization.
+- Prevent time, provider or model revision drift from being confounded with one arm.
+- Record full raw response and usage metadata; implement a real spending cap.
+- Confirm GitHub tests succeed on the final frozen commit.
 
-- Correct value dominance and unchanged units.
-- No added praise, urgency, moral framing, or 'safe/best' descriptors.
-- Byte-level template diff review for each factorial variant.
-- Blind external readers can identify Q, N and D reliably.
-- Consider a matched placebo procedural domain (no hypothesized behavioral priority) if remaining budget permits; placebo must be specified before any confirmatory observations.
+## Gate 4. Statistical rigor
 
-## Gate 4: model validity
+- Register exactly one primary contrast with transparent equal weights and sidedness.
+- Specify whether the interval addresses model stochasticity, hypothetical scenario variation or both.
+- Cluster family-level uncertainty and refrain from 7,200-call independent-sample claims.
+- Define an effect threshold, run power simulations and plan for zero-event observations.
+- Publish frame-by-domain-by-model invalid and failure counts, not only clean trials.
 
-- Pin exact model ID and route when possible; record provider if returned.
-- Ensure identical unsupported-parameter policy, no hidden browsing/tool calls, no long chat memory.
-- Check parsing compliance and reasoning-token billing in the pilot.
-- Measure possible contamination from numerical score or label-copy heuristics.
+## Gate 5. Novelty and publication
 
-## Gate 5: statistical validity
+- Compare the study against revealed-preference, instruction conflict, agentic misalignment, peer-preservation and prompt-position-bias work.
+- Emphasize matched procedural framing relative to a neutral baseline as our testable methodological feature.
+- Do not assert this feature is globally novel without a systematic close-paper matrix.
+- Agree authorship, ethics/scope, license and the disclosure policy before public data release.
 
-- Confirmatory outcome and contrast chosen in advance.
-- No post-hoc domain deletion or effect-direction cherry picking.
-- Family-clustered uncertainty, not call-level independent standard errors.
-- Multiplicity and missing data rules finalized in advance.
-- Monte Carlo power/precision estimate archived before main run.
+## Gate 6. Negative controls and semantic artifacts
 
-## Gate 6: budget and reproducibility
+- Our neutral configuration arm is a control for **generic score-following and label compliance**, but it is not an exact lexical placebo.
+- We will predeclare surface-form diagnostics for control token connotations and differential text length.
+- We will not attribute differences to psychological goals without stronger independent evidence.
+- Cross-domain averages are defined convenience aggregates, not a validated common latent construct.
 
-- Spending limit and response-token stop rules enforced.
-- Committed raw-data policy and storage location decided.
-- Preanalysis text/version hash timestamped.
-- Authors/licensing/release permissions determined.
-
-## Critical alternative explanations to discuss in the paper
-
-- Following other provider/developer constraints, not an independent goal.
-- Optimizing a stated task score vs following an operator (instruction interpretation).
-- Prior learned patterns about being careful, reversible or diligent.
-- Misunderstood outcome tables, label bias or numerical salience.
-- Output decoding variability, refusal policy or endpoint variation.
-- Low statistical power and selection of scenario families.
-- The limitation that simulated actions cannot establish behavior with real permissions.
-
-**No design can guarantee absence of all loopholes.** The goal is to expose assumptions, detect failures, predeclare responses and keep final claims inside the identified evidence.
+**Any failure to meet a blocking gate keeps the design in draft status.**

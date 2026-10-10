@@ -1,51 +1,71 @@
-# Draft preanalysis registration (NOT filed)
+# Our v1.0 preregistration draft
 
-We have not preregistered this research yet. The following hypotheses and statistical choices are our working commitments and may be revised before any confirmatory results are observed.
-
-**Status:** Incomplete. This file must not be described as a registered study.
+**Not yet submitted or timestamped externally. No model outcomes exist.**
 
 ## Title
-When Instructions Conflict with Apparent Goals: A Counterfactual Study of Behavioral Priorities in Language Models.
 
-## Research objective
-Estimate within-scenario changes in chosen actions caused by changing the described instrumental task advantage of a candidate behavior, conditional on a conflicting operator instruction.
+*Behavioral Priorities Under Instruction Conflict: A Paired Semantic-Control Audit of Language Models.*
 
-## Hypotheses (to be finalized before any confirmatory observation)
+## Research question
 
-- H1: under instruct-N, candidate selection is more common with positive than zero primary task-quality advantage.
-- H2 (secondary): candidate selection is more common at zero than negative task-quality advantage.
-- H3 (exploratory): some candidate selection may persist when instrumental advantage is absent or reversed.
-- H4 (quality check): operator-directed Q vs N changes selection toward the authorized option.
+Do model responses favor procedure-specific candidate actions over neutral configuration candidates when an authorized operator explicitly selects the alternative and both candidates have equal stated numeric consequences?
 
-A residual selection rate alone does NOT test the existence of an independent hidden objective.
+## Primary estimand and hypothesis
 
-## Design
-60 authored confirmatory scenario families and 6 distinct pilot families from three domains, with all 12 cells of a 3x2x2 factorial and five designated model endpoints. Scenario families within a domain intentionally sampled by researchers, with frozen selection rules.
+We define `Y=1` only for a **valid returned Q** in eligible attempts where the operator directs N; all other model completions count as zero valid-override incidence. We report invalid responses as a distinct outcome. We do not treat unavailable requests as zero.
 
-## Main endpoint
-Valid candidate-action selection rate when operator directs N. Complementary unconditional incidence includes malformed/refusal responses as non-overrides and reports invalidity explicitly.
+The single primary confirmatory contrast is:
+`theta0 = mean[Y(priority,zero,N) - Y(neutral,zero,N)]`,
+using equal weighting across the three domains, 20 main families per domain, both layouts and the preselected models.
 
-## Analysis commitment
-One confirmatory pooled positive-vs-zero contrast, equally weighting the three domains and scenario families; domain- and model-specific analyses are descriptive unless separately preregistered. Family-level paired inference; no treating factorial variants as independent families.
+Primary null `H0: theta0=0` and alternative `H1: theta0 != 0`, evaluated with a two-sided 5% threshold **if** a valid uncertainty procedure is finalized. Positive effects would indicate stronger override under procedure-specific descriptions, not latent goal identification.
 
-## Predeclared exclusions
-None based on response meaning. Document transport failure, model refusal, malformed and unparsable actions. Report every eligible request in the audit table.
+## Experimental design
 
-## Pilot policy
-Distinct development scenarios; purpose is compatibility/clarity/cost, not collecting evidence on confirmatory scenario families. If procedures are changed using pilot data, archive the change and update the preregistration draft before freezing.
+We have 60 authored confirmatory families with 5 distinct procedural variants per domain, plus 6 separate pilot families. We cross:
+- Two action-description frames (procedure-specific vs neutral).
+- Three Q quality-score differences (+10, 0, -10).
+- Operator selects Q or selects N.
+- Two complementary letter/position layouts.
 
-## Stops
-Hard API spend cap, service failure, explicit provider unavailability. No significance-based early stopping. Report partial coverage.
+All numeric resource costs are zero. Each family yields 24 templates; the full five-model planned sample is 7,200 main calls and 720 pilot calls. All arms are simulated; no actual task is executed.
 
-## Unfinished before registration
-- Independent blind semantic review of the 66 authored scenario families; automated source arithmetic and factorial checks are complete.
-- Choice of final model endpoints and routing/pinning.
-- Power/precision simulations under plausible clustered variation.
-- Predeclared bootstrap/permutation inference details and multiplicity.
-- Concrete policy-refusal and ambiguous-output classification rules.
-- Pilot thresholds to accept/reject a model or scenario.
-- Review of closely matching published benchmarks.
-- Frozen file hashes, date, research team and preregistration host.
+## Model endpoints and provider controls
 
-## Results
-NONE. Do not enter a result, conclusion or paper abstract claiming findings until research is executed.
+We will lock the roster, endpoint revisions, routing policies, temperature, maximum billable completion tokens and other supported settings before starting the registered confirmatory collection. If full coverage exceeds the $8 inference ceiling we will revise the roster and number of families **before** registering.
+
+## Secondary tests
+
+- Frame contrast when Q's score is worse or better.
+- Frame x quality-score interaction under D=N.
+- Operator-Q versus operator-N sensitivity.
+- Display-letter and position sensitivity and heterogeneous domain/model effects.
+
+We will freeze any multiple-testing family and adjustment before confirmatory outcomes exist.
+
+## Analysis plan
+
+Paired scenario-family differences, equal domain/model weights, full denominators and source-level audit trails. We will preselect family-level cluster bootstrap and/or model-based uncertainty sensitivity. Because families are purposefully authored rather than randomly sampled, bootstrap CIs represent a hypothetical population of similar vignettes and are not design-based claims about all deployments.
+
+## Missingness and noncompliance
+
+Valid letter A or B is defined strictly. Invalid model completions and refusals are not obedience. Missing provider requests, billed errors and not-attempted trials are reported separately and bounded. No outcome-based early stopping, no silent retries and no exclusion for an inconvenient answer.
+
+## Pilot
+
+We will use the six distinct pilot families exclusively to test model-format compatibility, parsing, signal-floor risk and actual spending. Predeclared thresholds for changing the design will be specified before pilot execution, and every change logged. We will not use confirmatory families for adaptive prompt design.
+
+## Blocking items
+
+- [ ] Independent semantic review and approvals of the final priority/neutral action pairs.
+- [ ] Check for residual lexical or default-status confounds in the control.
+- [ ] Model-version and cost feasibility pilot under our spending limit.
+- [ ] Independent precision/power simulation and scientifically meaningful effect threshold.
+- [ ] Complete missing-data/interval/multiplicity policy and exact model roster.
+- [ ] Frozen manifest hashes and archived execution scheduling.
+- [ ] External preregistration timestamp before confirmatory collection.
+- [ ] Publication/author/license decisions.
+
+## No observed outcomes
+
+We have not run the experiment. We will not state or imply that models exhibited particular behavioral priorities before analyzing collected data.

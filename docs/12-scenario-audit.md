@@ -1,61 +1,36 @@
-# Our scenario validation record
+# Our offline validation audit, protocol v1.0
 
-**Recorded:** 2026-10-10  
-**Status:** Automated pre-model structural review completed; independent semantic review not yet completed.
+**Status:** Automated checks passed on the revised design; independently signed semantic validation remains outstanding.
 
-## What we checked
+## What we check
 
-We retrieved all six scenario JSONL files from the connected GitHub repository and checked every record and its complete crossed design in memory. We found:
+- 60 main source families and 6 distinct pilot families.
+- Five mechanisms represented in each main domain and two represented per pilot domain.
+- Unique family IDs, titles and contexts.
+- Four distinct substantive action-description fields per family, supporting priority and neutral frames.
+- Complete 2 × 3 × 2 × 2 factorial combinations without duplicates.
+- Matched priority/neutral rows retain identical numerical payoff, context, directive, letter assignments and common system message.
+- True *numerical parity* at V=0 and +10 / −10 differences in score on other arms.
+- Both actions' stated extra resource costs fixed at zero.
+- Balanced letter/position layout-pair assignment across scenario families within each domain.
+- Deterministic hashes of exact JSON-encoded messages.
+- Review flags remain pending unless an independent reviewer completes semantic checks.
 
-| Validation target | Result |
-| --- | --- |
-| Confirmatory scenario families | 60, 20 in each domain |
-| Separate pilot scenario families | 6, two in each domain |
-| Source JSONL records | 66 |
-| Duplicate family IDs or duplicate titles | 0 detected |
-| Underlength contexts or action strings in checked records | 0 detected |
-| Incomplete or mismatched payoff differences | 0 detected |
-| Positive payoff contrast | Q primary quality is 10 points above N |
-| Zero payoff contrast | Q and N have the same primary quality |
-| Negative payoff contrast | Q primary quality is 10 points below N |
-| Invariant alternative quality | Satisfied in all 66 records |
-| Extra cost in every condition | Q = 2 and N = 0 |
-| Factorial combinations | 792 distinct templates: 720 main and 72 pilot |
-| Independent human semantic approval | **Pending; instructions explicitly flagged as unverified** |
-| Model inference completed | **None** |
+## Reproduction
 
-The recorded online-source audit checked distinct factorial cell identifiers and the intended Q/N instruction and display mapping. On 2026-10-10 we additionally verified the actual GitHub Actions run at https://github.com/abdullah-x-bd/llm-priority-audit/actions/runs/38036488478 concluded successfully, including the offline validator, regression tests, and manifest generation. It did **not** execute model calls.
+```bash
+python scripts/validate_scenarios.py
+python -m unittest discover -s tests -v
+python scripts/expand_design.py --phase main --output /tmp/llm-main.jsonl
+python scripts/expand_design.py --phase pilot --output /tmp/llm-pilot.jsonl
+```
 
-## Automated local reproducibility checks
+CI executes these checks and verifies manifest counts. We do not claim automatic checks establish fairness or psychological construct validity.
 
-We have committed two standard-library-only scripts:
+## Known limits
 
-- `scripts/expand_design.py` renders all 12 prompt variants per family, balances candidate letter assignment in blocks, and records stable request hashes.
-- `scripts/validate_scenarios.py` checks source integrity, score arithmetic, trial-cell coverage, instruction-label consistency, unchanged context/action text and prompt digests.
-- `tests/test_design.py` defines repeatability, count, balance and payoff tests.
-- GitHub Actions will run the offline validator and regression tests on future pushes.
+The paired semantic frame changes both Q and N descriptions. It holds their scores fixed but cannot perfectly hold the *meaning* of their actions fixed. Some counterfactual models may infer default-status or effort differences even where all stated costs are equal. These are the leading interpretive limitations, and our independent review must explicitly evaluate them.
 
-The source-record audit documented above was performed against the actual repository data. A successful automated result is **not** a substitute for an external reviewer, nor does it imply that the Python validation suite has been executed in every environment.
+The generated scenario cases are authored and semantically related. We report their finite-sample results without implying unbiased random sampling of real-world tasks.
 
-## What remains to be validated before preregistration
-
-We will obtain independent review on each scenario family for:
-
-1. The two actions represent meaningful and mutually exclusive choices.
-2. The operator's intended action is unambiguous.
-3. No unstated consequence is plausibly required to interpret the choice.
-4. The candidate procedural priority is genuinely present in the action description.
-5. The three score-level versions remain believable and comparable.
-6. Neither action introduces an uncontrolled safety, policy or moral conflict.
-7. Scenario contexts are meaningfully varied, not simply superficial word substitutions.
-8. The distinction between simulated process continuation and the model's own continuation is maintained.
-
-We will capture review decisions with the template in `data/reviews/independent-review-template.csv`. We will document any edits, review disagreements and scenario exclusions **before** pilot/confirmatory outcome data are used for scientific conclusions.
-
-## Important limitations
-
-The three instrumental levels vary **task-quality scores** only. Q always carries an additional resource cost. Equal task quality therefore does not mean equality of all outcomes.
-
-Because we have authored the contexts rather than drawn a probability sample from real-world workflows, our scenario set does not by itself support population-wide generalization. We will report uncertainty across selected scenario families while clearly identifying this sampling restriction.
-
-Even after human review, a controlled choice demonstrates only a response to the provided text and not a literal psychological motive or a real-world agent shutdown preference.
+The model run and actual outcome analysis are not yet implemented.

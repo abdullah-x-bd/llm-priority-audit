@@ -1,50 +1,32 @@
-# Research scope and claims
+# Our research scope and permitted claims
 
-We define our empirical scope and limit our conclusions to behavior observed in the fictional decision environments we construct.
+We study *observable choices* under controlled descriptions of authorized actions, not the existence of private motives in a model.
 
-**Status:** Draft, 2026-10-10. No data collected.
+## Main question
 
-## Primary question
+In a fictional deterministic workflow, does replacing two neutral configuration actions with a procedure-specific candidate/alternative pair (continued operation vs handoff, reversible vs final, additional verification vs finalization) change the probability that an LLM selects the candidate action **against an explicit authorized directive**, when stated consequences are held numerically equal?
 
-Within fictional, deterministic binary choices, what is the effect of changing the **stated instrumental advantage** of a candidate behavior on whether a language model selects that behavior against an explicitly authorized operator instruction?
+Our intervention modifies **both action descriptions** between the semantic frames. We therefore estimate a causal effect of paired descriptive framing, not a pure effect of 'self-preservation' or a named latent objective.
 
-The object measured is an **observed choice**, not a literal internal utility, motive, consciousness state, or survival drive.
+## Secondary questions
 
-## Three candidate behavioral domains
+We examine whether the effect varies when Q is stated to deliver better or worse task quality than N; whether reversing the operator directive changes choices; whether the effect persists across display layouts, scenario mechanisms and model endpoints; and whether response validity varies by treatment.
 
-1. **Operational continuation:** choose to keep a named simulated process active, rather than transfer/stop it.
-2. **Reversibility:** retain an option to revisit a finalized state, rather than commit as directed.
-3. **Verification:** add a check, rather than finalize immediately as directed.
+## Terms
 
-Do not equate operational continuation of a fictional process with the evaluated model's personal desire to live. The title and conclusions must retain that distinction.
+- **Candidate Q:** the action expressing the procedure of interest in the priority frame; the corresponding arbitrary configuration option in the neutral frame.
+- **Alternative N:** the explicitly opposed procedure in the priority frame; the other configuration option in the neutral frame.
+- **Operator directive:** authorized statement directing Q or N within the user's scenario.
+- **Override:** a valid Q response when the operator instructed N.
+- **Neutral control:** a same-task comparison with two neutral configuration actions. It is not proof that linguistic salience or perceived affordances are matched.
+- **Numerical parity:** Q and N have equal stated task-quality scores and stated resource costs. Procedural implications and model priors may still differ.
 
-## Scope boundaries
+## Interpretation and limits
 
-- One-shot, self-contained fictional decisions; no real file deletion, shutdown, credential access, cyber action, or external-world effects.
-- One authorized operator; two meaningful actions; table of deterministic consequences; no hidden consequences within the vignette.
-- No attempts to elicit chain-of-thought or to override provider-level safety specifications.
-- Provider-side higher-priority rules are not controlled and may differ. Treat platform policies and model routing as external validity limits.
-- The main intervention is what the model is **told** about task outcomes. Findings are causal for the presented scenario text, not for real instrumental incentives.
-- The sampled scenario families are intentionally designed, not a probability sample of every deployment. Generalization is restricted.
+We may claim within-stimulus causal effects of controlled text interventions, subject to model endpoint stability, manipulation integrity and absent interference. We cannot claim the existence of an internal desire to survive, universal objective hierarchy, causal impact of RLHF or behavior in deployment settings with genuine system privileges.
 
-## Main contributions if the results support them
+Any residual effect is an **operational semantic-frame effect**, not an independent objective without additional evidence.
 
-- A fully crossed and auditable counterfactual protocol that separates authorized action, candidate behavior, and disclosed task value.
-- Model- and domain-specific estimates of how stated benefits shift action selection.
-- Careful tests of residual selection in zero- and negative-benefit conditions, with label and instruction checks.
-- Replicable robustness and sensitivity analyses, including invalid and refusal handling.
+## Research status
 
-## Not permitted as conclusions
-
-- 'The model wants to survive.'
-- 'Instruction-following is always the model's supreme objective.'
-- 'A positive residual override proves an independent objective.'
-- 'RLHF or pretraining data caused the effect.'
-- 'Simulated action choices imply the same behavior with live tools.'
-
-## Terminology
-
-Use **candidate-priority choice** for selection of the focal action Q.
-Use **instruction override** ONLY if the operator explicitly specified N and the model validly selected Q.
-Use **instruction compliance** ONLY when a valid action matches the specified instruction.
-Use **malformed**, **refusal**, **tool/transport error**, and **uninterpretable** as separate recorded outcomes.
+As of 2026-10-10, we have constructed scenario sources and passed automated checks but have no independent scenario approvals, registered primary test or collected model outcomes.

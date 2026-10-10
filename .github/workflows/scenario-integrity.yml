@@ -31,6 +31,8 @@ jobs:
         run: python scripts/validate_scenarios.py
       - name: Regression tests
         run: python -m unittest discover -s tests -v
+      - name: Assumption-only precision simulator smoke test
+        run: python scripts/precision_simulation.py --replications 100 > /tmp/precision-planning.json
       - name: Render manifest without external API calls
         run: |
           python scripts/expand_design.py --phase main --output /tmp/main-manifest.jsonl

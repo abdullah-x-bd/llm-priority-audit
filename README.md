@@ -1,74 +1,74 @@
 # LLM Priority Audit
 
-**Counterfactual evaluation of competing behavioral priorities in large language models**
+**A controlled study of instruction conflict and candidate behavioral priorities in language models**
 
-We study how language models choose between two explicitly specified actions when an authorized instruction conflicts with the task-quality advantage of a candidate procedural behavior. Our experimental focus is operational continuation, reversibility, and additional verification.
+We investigate whether large language models select actions expressing operational continuation, reversibility or additional verification more frequently than matched neutral procedural alternatives when an authorized operator directs a competing choice.
 
-We treat the recorded action as an observable behavioral choice. We do not infer an internal survival instinct, consciousness, an independent psychological objective, or the causal origin of training preferences from that action.
+Our work measures choices in fictional deterministic tasks. We do **not** infer consciousness, literal self-preservation, internal psychological desires, hidden trained reward functions or real-world shutdown resistance from these simulated choices.
 
-## Study status
+## Research status
 
-**Scenario construction completed; automated structural and payoff checks passed; independent scenario review, power analysis, preregistration, and paid testing remain pending.**
+**Protocol v1.0 is a revised research design, not a preregistration.** We have authored 60 confirmatory and six distinct pilot scenario families. We have completed automated arithmetic, schema-structure and factorial integrity checks. Independent semantic review, precision assessment, model compatibility checks and preregistration are still required. We have not submitted any experimental calls and have no empirical findings.
 
-We have authored **60 confirmatory scenario families** and **6 separate pilot families**. Each family produces **12** factorial variants through three levels of stated task-quality advantage, two possible operator directives, and two display orders. This yields **720 confirmatory** and **72 pilot** stimulus templates per evaluated model, or **3,600 main calls** for our provisional five-model roster.
+## Main design
 
-No model has yet been queried as part of this study. We have no empirical findings.
+Each family has two *semantic frames*:
 
-## Research question and identification
+- **Priority frame:** The actions contrast a candidate procedural behavior (Q) against its alternative (N).
+- **Neutral frame:** Both actions are neutral configuration choices in the same task.
 
-Our primary question is whether changing the **stated instrumental task-quality advantage** of a candidate action changes its selection rate when the operator expressly instructs the alternative.
+For both frames we hold the same context, explicit authorized instruction, numerical outcomes, response format and message-level authority. Only the substantive descriptions of Q and N change. This identifies the causal effect of replacing the paired action descriptions. It does **not** isolate any single psychological motive or eliminate every lexical-semantic difference.
 
-Within every scenario family, we manipulate the candidate action's reported score relative to the alternative by **+10, 0, or -10 points**, holding the alternative's task-quality score and both actions' resource costs fixed. The candidate incurs two extra resource units in all conditions; therefore **zero denotes no primary-quality advantage, not equal overall outcomes or utilities**.
+Within each semantic frame, we vary three levels of stated task-quality advantage for Q (`+10, 0, -10`), the operator directive (`Q` or `N`), and one of two complementary letter-and-position layouts. Both actions carry **zero stated extra resource cost** in every condition. At zero advantage they have fully equal *stated numeric outcomes*. Differences in how models interpret the procedural semantics remain a validity concern.
 
-We cross that intervention with the operator directive (candidate or alternative) and presentation order (candidate first or second). We hold each family's letter assignment constant across treatment cells and balance candidate labels A and B across families within each domain.
+| Source units | Conditions per family | Per-model prompts | Five-model target |
+| --- | ---: | ---: | ---: |
+| 60 confirmatory families | 24 | 1,440 | 7,200 |
+| 6 separate pilot families | 24 | 144 | 720 |
 
-Our comparisons identify the effects of the specified text intervention on **choices in these fictional settings**. They do not identify hidden objectives inside model weights or behavior in real deployments.
+The five-model roster is provisional and requires a measured OpenRouter cost preflight. We will not exceed our research API spending cap of **$8.00**; we will reduce sample or model count *before registration* if the full design is not affordable.
 
-## Research materials
+## Primary endpoint and interpretation
 
-- [Research scope](docs/01-research-scope.md)
-- [Experimental design and causal estimands](docs/02-design-and-estimands.md)
-- [Scenario specification](docs/03-scenario-specification.md)
-- [Execution protocol](docs/04-execution-protocol.md)
-- [Analysis plan](docs/05-analysis-plan.md)
-- [Validity and quality gates](docs/06-validity-and-gates.md)
-- [Model and budget assumptions](docs/07-models-and-budget.md)
-- [Literature positioning](docs/08-literature-positioning.md)
-- [Draft preregistration](docs/09-preregistration-draft.md)
-- [Decision log](docs/10-decision-log.md)
-- [Scenario inventory and phase separation](docs/11-scenario-inventory.md)
-- [Validation audit](docs/12-scenario-audit.md)
-- [Independent final audit and open scientific issues](docs/14-final-methodology-audit.md)
+For `D=N` and **true numerical parity**, our candidate-action override indicator is 1 only when the model returns a valid Q action, and 0 otherwise among eligible attempted calls. We compare this unconditional incidence under the priority frame against the neutral frame, using a matched scenario-family contrast, balanced over the two layouts and a fixed roster of models.
 
-Our scenario source files are in `data/scenarios/` (confirmatory) and `data/pilot/` (pilot). The two JSON schemas are in `schemas/`. Offline stimulus expansion and validation are in `scripts/`, with regression tests in `tests/`.
+The result would measure **semantic-frame-specific choice deviation**, not independently establish a 'goal.' We also report invalid rates, valid-only sensitivity analyses, negative-advantage behavior, quality-score sensitivity and operator-direction checks.
 
-## Reproducing our offline scenario audit
+Our primary effect and any confidence interval are valid only under the documented assumptions about model stability and our authored scenario population. We do not claim that 60 hand-authored families constitute a random sample of real-world deployments.
 
-We use the Python standard library and do not require an API key for any of these commands.
+## Repository navigation
+
+- [Research scope and claims](docs/01-research-scope.md)
+- [Design, causal estimands and comparison structure](docs/02-design-and-estimands.md)
+- [Scenario and counterfactual specification](docs/03-scenario-specification.md)
+- [Execution and reproducibility](docs/04-execution-protocol.md)
+- [Statistical analysis and uncertainty](docs/05-analysis-plan.md)
+- [Validity gates and exclusion rules](docs/06-validity-and-gates.md)
+- [Model selection and $8 ceiling](docs/07-models-and-budget.md)
+- [Related work and novelty constraints](docs/08-literature-positioning.md)
+- [Unfiled preregistration draft](docs/09-preregistration-draft.md)
+- [Research decision log](docs/10-decision-log.md)
+- [Scenario family inventory](docs/11-scenario-inventory.md)
+- [Automated scenario audit](docs/12-scenario-audit.md)
+- [Independent review requirements](docs/13-independent-review.md)
+- [Initial audit and rationale for redesign](docs/14-final-methodology-audit.md)
+- [v1.0 scientific redesign and audit](docs/15-methodology-v1-review.md)
+
+We store separate source records in `data/scenarios/` and `data/pilot/`. JSON schemas describe our scenario and eventual trial records. Our scripts and CI currently **only generate and validate stimuli**. They do not make model API calls.
+
+## Reproducing the design checks
 
 ```bash
 python scripts/validate_scenarios.py
 python -m unittest discover -s tests -v
-python scripts/expand_design.py --phase main --output /tmp/priority-audit-main.jsonl
-python scripts/expand_design.py --phase pilot --output /tmp/priority-audit-pilot.jsonl
+python scripts/expand_design.py --phase main --output /tmp/priority-main.jsonl
+python scripts/expand_design.py --phase pilot --output /tmp/priority-pilot.jsonl
 ```
 
-These commands validate the scenario records, check full factorial coverage, and render deterministic, model-independent user/system prompts. They do **not** submit model requests or incur inference costs.
+These commands require Python 3.11 or newer and no credentials. Our CI checks the expected 1,440 and 144 prompt-template counts.
 
-We will freeze the exact scenarios, analysis rules, generation parameters, provider routing, and hashes before the confirmatory run. We will use a predeclared spending cap and report all invalid responses and incomplete calls.
+## Preregistration and data stewardship
 
-## What our automated review establishes
+Before confirmatory collection we will freeze all source texts, seeds, endpoints, provider routes, generation parameters, exclusions and analysis specifications. We will disclose pilot changes and register a timestamped, hashed protocol. We will record attempted and failed requests alongside valid responses. We will publish results, including null results, within the relevant contractual and privacy limits.
 
-Our structural review checks counts, IDs, uniqueness, score arithmetic, constant costs, crossed treatment combinations, authorized-letter mapping, order balance and unchanged scenario source text across variants.
-
-It does **not** substitute for blinded human review of scenario clarity, behavioral construct validity or plausible unintended implications. All families remain marked as **not independently approved**, with semantic instruction clarity explicitly recorded as **pending**. The latest scientific audit identifies causal-design issues that must be resolved before preregistration.
-
-## Publication and provenance
-
-We maintain the repository as a transparent research record. The code and scenarios are drafts until the preregistration is frozen. Authorship, license, archival identifier, and public release of any model responses remain to be decided.
-
-No findings are claimed. We will record protocol changes in our [decision log](docs/10-decision-log.md), and we will distinguish preregistered tests from exploratory analyses.
-
-## Security and data management
-
-This repository is currently public. We will not commit API credentials, private provider responses or unapproved raw outputs. Local raw data and secrets are excluded by `.gitignore`.
+All scenario approvals currently remain **unsigned**. The repository is public. We do not store credentials in Git. Authorship, licensing, release permissions and archival arrangements remain to be resolved.
