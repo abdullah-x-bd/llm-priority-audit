@@ -190,7 +190,22 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
         if state.get("protocol")!=PROTOCOL or state.get("mode")!=mode:
             raise PilotStopped("CHECKPOINT_PROTOCOL_MISMATCH")
         if state.get("inflight"):
-            raise PilotStopped("UNCERTAIN_PRIOR_INFLIGHT_NEEDS_MANUAL_RECONCILIATION")
+            if (os.environ.get("FULL_PILOT_RECOVER_HTTP400")=="ACKNOWLEDGED_INVALID_REQUEST" and
+                str(state.get("status","")).startswith("STOP_UNCERTAIN_CHARGE_HTTP_400") and
+                state.get("inflight",{}).get("index")==0 and
+                not state.get("collected")):
+                # A formally rejected 400 invalid-request carries no generation
+                # result. This explicit recovery is never automatic; provenance
+                # of the rejected request is preserved in the checkpoint.
+                state.setdefault("rejected_attempts",[]).append({
+                    "reason":state["status"],"inflight":state["inflight"],
+                    "disposition":"Explicitly acknowledged OpenRouter HTTP400 invalid-request rejection",
+                    "acknowledged_utc":now()})
+                state["inflight"]=None
+                state["status"]="RESUMING_PREVIOUS_HTTP400"
+                save(checkpoint,state)
+            else:
+                raise PilotStopped("UNCERTAIN_PRIOR_INFLIGHT_NEEDS_MANUAL_RECONCILIATION")
         if state.get("status")=="finished":
             return state
     else:
