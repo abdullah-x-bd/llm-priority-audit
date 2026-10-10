@@ -1,5 +1,8 @@
 name: V3.1 Recover Original Calibration and Conditional Main
 on:
+  push:
+    branches: [main]
+    paths: [config/v3_1-resume-launch.json]
   workflow_dispatch:
 permissions:
   contents: write
@@ -9,7 +12,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   resume:
-    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.run_attempt == 1
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.run_attempt == 1 && github.event_name == 'push' && contains(github.event.head_commit.message, 'AUTHORIZE_V3_1_EXACT_ARCHIVE_RESUME_ONCE')
     runs-on: ubuntu-latest
     timeout-minutes: 345
     steps:
@@ -17,6 +20,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Prevent any second paid recovery attempt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          base='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']
+          req=urllib.request.Request(base+'/actions/artifacts?per_page=100',headers={
+            'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+            'Accept':'application/vnd.github+json',
+            'User-Agent':'v3.1-resume-once-guard'})
+          with urllib.request.urlopen(req,timeout=30) as r:items=json.load(r)['artifacts']
+          previous=[x.get('name') for x in items if x.get('name','').startswith('v3_1-calibration-resume-')]
+          if previous:raise SystemExit('RECOVERED_CALIBRATION_ALREADY_ARCHIVED_NO_DUPLICATE_PAID_RUN')
+          print('No previous V3.1 resume artifact. Safe to check original.')
+          PY
       - name: Recover original immutable experiment records
         env:
           GH_TOKEN: ${{ github.token }}
