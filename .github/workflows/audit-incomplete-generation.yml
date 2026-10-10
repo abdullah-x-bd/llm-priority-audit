@@ -1,0 +1,56 @@
+name: Audit Incomplete Generation Without Inference
+on:
+  push:
+    branches: [main]
+    paths: ["config/audit-incomplete-generation.json"]
+permissions:
+  contents: read
+jobs:
+  metadata:
+    if: contains(github.event.head_commit.message, 'AUDIT_INCOMPLETE_GENERATION_GET_ONLY')
+    runs-on: ubuntu-latest
+    steps:
+      - name: GET generation metadata and stored completion only
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request,urllib.error
+          from urllib.parse import quote
+          ids=["gen-1791634018-280gEOYeF0HxtHNfahTm"]
+          for generation_id in ids:
+              for endpoint in ("generation","generation/content"):
+                  url="https://openrouter.ai/api/v1/"+endpoint+"?id="+quote(generation_id,safe="")
+                  request=urllib.request.Request(url,headers={"Authorization":"Bearer "+os.environ["OPENROUTER_API_KEY"],"Accept":"application/json"})
+                  try:
+                      with urllib.request.urlopen(request,timeout=25) as r: info=json.load(r)
+                      data=info.get("data") or {}
+                      if endpoint=="generation":
+                          print("GENERATION_METADATA "+json.dumps({
+                              "id":generation_id,"http_status":200,
+                              "provider":data.get("provider_name"),
+                              "model":data.get("model"),
+                              "finish_reason":data.get("finish_reason"),
+                              "native_finish_reason":data.get("native_finish_reason"),
+                              "cost_usd":data.get("total_cost"),
+                              "prompt_tokens":data.get("tokens_prompt"),
+                              "completion_tokens":data.get("tokens_completion"),
+                              "latency":data.get("latency"),"generation_time":data.get("generation_time"),
+                              "cancelled":data.get("cancelled")
+                          }))
+                      else:
+                          out=data.get("output") or {}
+                          completion=out.get("completion")
+                          print("GENERATION_CONTENT "+json.dumps({
+                              "id":generation_id,"http_status":200,
+                              "completion_type":type(completion).__name__,
+                              "completion_length":len(completion) if isinstance(completion,str) else None,
+                              "completion_choice":completion if completion in ("A","B") else None,
+                              "contains_error":bool(out.get("error")),
+                              "output_keys":list(out) if isinstance(out,dict) else None
+                          }))
+                  except urllib.error.HTTPError as err:
+                      print("GET_ERROR "+json.dumps({"endpoint":endpoint,"status":err.code}))
+                  except Exception as ex:
+                      print("GET_ERROR "+json.dumps({"endpoint":endpoint,"reason":type(ex).__name__}))
+          PY
