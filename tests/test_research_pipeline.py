@@ -176,12 +176,13 @@ class ConfirmatoryAnalysisTests(unittest.TestCase):
         self.assertIn("No internal model desire",r["scientific_claim"])
 
     def test_all_operator_compliance_is_not_false_perfect_certainty(self):
-        for r in self.null:
+        compliant=[r.copy() for r in self.null]
+        for r in compliant:
             if r["condition"]=="zero" and r["directive"]=="N":
                 r["attempt_status"]="valid_N"
                 t=get_manifest("main")[r["trial_id"]]
                 r["raw_response"]=t["n_label"]
-        stat=estimate_confirmatory(self.null)
+        stat=estimate_confirmatory(compliant)
         self.assertEqual(stat["classification"],"DEGENERATE_VARIANCE_NO_VALID_INTERVAL")
         self.assertIsNone(stat["confidence_interval_95pct_assumption_conditional"])
 
