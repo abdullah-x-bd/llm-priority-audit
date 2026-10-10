@@ -370,6 +370,37 @@ class CollectorTests(unittest.TestCase):
             self.assertFalse(r["canonical_validation"]["complete"])
             self.assertGreater(r["unresolved_rejection_reserve_usd"],0)
 
+
+    def test_recover_legacy_http200_missing_model_without_retry(self):
+        class LegacyIncomplete(FakeService):
+            def request(self,path,body=None):
+                response=super().request(path,body)
+                if path=="/chat/completions" and self.calls==4:
+                    return {"id":"gen-original-legacy-missing-model"}
+                return response
+        with tempfile.TemporaryDirectory() as temp:
+            out=Path(temp)
+            with mock.patch("full_pilot.time.sleep"):
+                previous=collect(LegacyIncomplete(REF),out,"live")
+            self.assertEqual(len(previous["collected"]),3)
+            self.assertEqual(previous["inflight"]["index"],3)
+            self.assertIsNone(previous["unaccepted_response"]["returned_model"])
+            second=FakeService(REF)
+            with mock.patch.dict(os.environ,{
+                  "FULL_PILOT_RAW_FIRST":"1",
+                  "FULL_PILOT_RECOVER_LEGACY_INCOMPLETE":"ACKNOWLEDGE_AND_SKIP_UNBILLED_UNKNOWN"}):
+                with mock.patch("full_pilot.time.sleep"):
+                    resumed=collect(second,out,"live",max_requests=7)
+            self.assertEqual(len(resumed["collected"]),7)
+            self.assertEqual(second.calls,3)
+            self.assertEqual(resumed["collected"][3]["attempt_status"],"provider_error")
+            self.assertIsNone(resumed["collected"][3]["settings_json"])
+            self.assertEqual(len(resumed["rejected_attempts"]),1)
+            self.assertEqual(len(resumed["recovery_events"]),1)
+            self.assertFalse(resumed["recovery_events"][0]["raw_response_available"])
+            self.assertEqual(len(resumed["raw_events"]),3)
+            self.assertEqual(resumed["raw_events"][0]["index"],4)
+
     def test_never_touch_main_source(self):
         _,selected=sample_plan()
         self.assertTrue(all(int(t["family_id"].split("-")[-1])>=91 for _,t in selected))
