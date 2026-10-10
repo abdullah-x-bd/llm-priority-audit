@@ -20,7 +20,7 @@ class PreparationGateTests(unittest.TestCase):
     def test_lengths_and_repeated_mechanisms(self):
         state=report()
         self.assertLess(state["maximum_action_length_gap_percent"],10)
-        self.assertEqual(state["distinct_main_target_action_pairs"],15)
+        self.assertEqual(state["distinct_main_target_action_pairs"],18)
         self.assertEqual(state["max_reuse_of_target_action_pair"],4)
         self.assertEqual(state["pilot_spend_ceiling_usd"],.75)
 if __name__=="__main__":

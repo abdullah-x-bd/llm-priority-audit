@@ -14,7 +14,7 @@ See `data/reviews/internal-semantic-audit.csv` for all 66 decisions, the status 
 - All families share two neutral code-based configuration options with the same grammar and length within the control frame.
 - Numerical equality of stated scores and costs remains preserved at `V=0`.
 - All control pairs are *conditionally* accepted for technical measurement. They remain a distinct decision type from the procedure-specific actions and cannot isolate a pure psychological motive.
-- Target action-pair reuse remains 15 mechanisms over 60 confirmatory contexts; mechanism-level sensitivity analysis is necessary.
+- The main source now has 18 distinct literal target-action pairs, grouped into 15 mechanism categories over 60 contexts; mechanism-level sensitivity analysis is necessary.
 
 ## Scientific limits
 

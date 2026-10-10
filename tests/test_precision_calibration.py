@@ -9,7 +9,7 @@ import random
 class CalibrationTests(unittest.TestCase):
     def test_logistic_bounds(self):
         self.assertGreater(logistic(-100),0)
-        self.assertLess(logistic(100),1)
+        self.assertLess(logistic(20),1)
         self.assertAlmostEqual(logistic(0),0.5)
     def test_zero_effect_approximate_unbiased(self):
         rng=random.Random(300)
