@@ -199,6 +199,7 @@ def build_report(records, sequence):
 
 def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=False):
     check_authorization()
+    raw_first=(mode=="live" and os.environ.get("FULL_PILOT_RAW_FIRST")=="1")
     reference,sequence=sample_plan()
     if max_requests is not None and (max_requests<=0 or max_requests>SAMPLE_COUNT):
         raise PilotStopped("INVALID_MAX_REQUESTS")
@@ -332,7 +333,6 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
                "cost_usd":0.0,"plan_size":len(sequence),"created_utc":now()}
         save(checkpoint,state)
     records=state["collected"]
-    raw_first=(mode=="live" and os.environ.get("FULL_PILOT_RAW_FIRST")=="1")
     # Replay every previously logged row against today's exact manifest to
     # protect against changed source stimuli across an interrupted run.
     expected=[(m,t["trial_id"],t["request_sha256"]) for m,t in sequence]
