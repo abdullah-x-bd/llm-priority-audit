@@ -1,0 +1,10 @@
+{
+  "mode": "raw_first",
+  "source_run_id": 38050278864,
+  "prior_completed": 584,
+  "reconcile_interrupted_index": 584,
+  "new_requests_max": 135,
+  "attempt_target": 720,
+  "cap_usd": 0.75,
+  "description": "Resume full exploratory pilot without replaying interrupted request"
+}
