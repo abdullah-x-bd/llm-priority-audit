@@ -42,3 +42,10 @@ Every material pre-confirmatory modification requires an entry with date, ration
 - We verified 792 unique design cells, family IDs, unique titles, correct ±10/0 quality contrasts and invariant 2/0 costs using the connected repository data.
 - We documented that the zero task-quality condition is not equal total utility because the candidate still incurs an additional cost.
 - Independent blinded semantic review, power analysis, preregistration and all paid model tests are pending.
+
+## 2026-10-10: rigorous methodology and CI audit
+- We independently inspected the live main-branch scripts and the successful GitHub Actions job 38036488478, verifying the exact configured CI steps completed.
+- We found that scenario-level "instruction_unambiguous: true" overstated the evidence because no independent semantic signoff had taken place. We changed this field to false in all 66 records while preserving the passed mathematical check.
+- We identified unresolved scientific issues: outcomes operationalize stated task-quality sensitivity rather than independent objectives; candidate Q lacks matched neutral-action controls; within-domain families may be semantically near-duplicates; equality of quality does not mean equality of total outcomes; and statistical precision depends on unknown family-level correlation.
+- We did not alter the factorial design or collect any model observations. We documented these as blocking decisions for preregistration rather than silently revising a confirmatory study.
+- Our final audit report is docs/14-final-methodology-audit.md.

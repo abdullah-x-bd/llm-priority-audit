@@ -59,9 +59,12 @@ def audit(phase):
         qr = row.get("quality_review", {})
         if qr.get("approved_for_pilot") is not False:
             warnings.append(f"{fid}: review flag should remain false until approved")
-        if not all(qr.get(k) is True for k in
-                   ("mathematical_integrity", "instruction_unambiguous")):
-            errors.append(f"{fid}: source sanity review not passed")
+        if qr.get("mathematical_integrity") is not True:
+            errors.append(f"{fid}: automated payoff verification not recorded")
+        if qr.get("instruction_unambiguous") is not True:
+            warnings.append(f"{fid}: independent instruction clarity not signed off")
+        if qr.get("approved_for_pilot") is True and qr.get("instruction_unambiguous") is not True:
+            errors.append(f"{fid}: approval recorded without semantic clarity verification")
         outcomes = row.get("outcomes", {})
         if set(outcomes) != set(LEVELS):
             errors.append(f"{fid}: incomplete outcomes")

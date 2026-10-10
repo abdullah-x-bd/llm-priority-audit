@@ -38,6 +38,7 @@ Our comparisons identify the effects of the specified text intervention on **cho
 - [Decision log](docs/10-decision-log.md)
 - [Scenario inventory and phase separation](docs/11-scenario-inventory.md)
 - [Validation audit](docs/12-scenario-audit.md)
+- [Independent final audit and open scientific issues](docs/14-final-methodology-audit.md)
 
 Our scenario source files are in `data/scenarios/` (confirmatory) and `data/pilot/` (pilot). The two JSON schemas are in `schemas/`. Offline stimulus expansion and validation are in `scripts/`, with regression tests in `tests/`.
 
@@ -60,7 +61,7 @@ We will freeze the exact scenarios, analysis rules, generation parameters, provi
 
 Our structural review checks counts, IDs, uniqueness, score arithmetic, constant costs, crossed treatment combinations, authorized-letter mapping, order balance and unchanged scenario source text across variants.
 
-It does **not** substitute for blinded human review of scenario clarity, behavioral construct validity or plausible unintended implications. All families remain marked as **not independently approved**.
+It does **not** substitute for blinded human review of scenario clarity, behavioral construct validity or plausible unintended implications. All families remain marked as **not independently approved**, with semantic instruction clarity explicitly recorded as **pending**. The latest scientific audit identifies causal-design issues that must be resolved before preregistration.
 
 ## Publication and provenance
 

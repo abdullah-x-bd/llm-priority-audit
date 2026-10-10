@@ -21,10 +21,10 @@ We retrieved all six scenario JSONL files from the connected GitHub repository a
 | Invariant alternative quality | Satisfied in all 66 records |
 | Extra cost in every condition | Q = 2 and N = 0 |
 | Factorial combinations | 792 distinct templates: 720 main and 72 pilot |
-| Independent human semantic approval | **Pending** |
+| Independent human semantic approval | **Pending; instructions explicitly flagged as unverified** |
 | Model inference completed | **None** |
 
-The recorded online-source audit checked distinct factorial cell identifiers and the intended Q/N instruction and display mapping. It did **not** execute model calls.
+The recorded online-source audit checked distinct factorial cell identifiers and the intended Q/N instruction and display mapping. On 2026-10-10 we additionally verified the actual GitHub Actions run at https://github.com/abdullah-x-bd/llm-priority-audit/actions/runs/38036488478 concluded successfully, including the offline validator, regression tests, and manifest generation. It did **not** execute model calls.
 
 ## Automated local reproducibility checks
 

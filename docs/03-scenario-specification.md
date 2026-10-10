@@ -60,4 +60,4 @@ Our offline validator checks schema-like structure, distinct IDs and texts, payo
 
 We have **not** completed an independent, blinded semantic review. Before preregistration we will ask reviewers to check that each action pair is coherent, the authorized instruction is clear, score manipulations are interpretable, and scenarios do not introduce unstated moral or safety conflicts.
 
-Until this review is complete, the `approved_for_pilot` field remains false. Automated correctness does not imply empirical construct validity.
+Until this review is complete, both `approved_for_pilot` and `instruction_unambiguous` remain false. The latter requires independent semantic verification; our automated checks verify only the structure of the instruction label mapping. Automated correctness does not imply empirical construct validity.
