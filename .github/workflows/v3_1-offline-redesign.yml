@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   v3_1-offline:
@@ -33,6 +34,13 @@ jobs:
         run: |
           python -m py_compile scripts/v3_1_single_shot_run.py scripts/v3_1_publish_results.py scripts/v3_1_resume_study.py
           python scripts/v3_1_single_shot_run.py --stage mock
+      - name: Verify original paid artifact recovery without inference
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p results/private/v3_1-original
+          gh run download 38078421238 --repo abdullah-x-bd/llm-priority-audit --name v3_1-paid-calibration-38078421238 --dir results/private/v3_1-original
+          python scripts/v3_1_resume_study.py --mode audit
       - name: Generate main and calibration manifests with no inference
         run: python scripts/v3_1_economic_design.py --phase both --out-dir /tmp/v3_1-offline
       - name: Check exact manifest counts and zero authorizations
