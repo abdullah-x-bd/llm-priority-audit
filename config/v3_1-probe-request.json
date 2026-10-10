@@ -1,0 +1,5 @@
+{
+  "intent": "check live one-shot study status",
+  "expected_trigger_sha": "dd99ba8c7739df6a1ade45158a1eee3ed33ffcde",
+  "model_requests_authorized": false
+}
