@@ -203,19 +203,24 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
         if state.get("protocol")!=PROTOCOL or state.get("mode")!=mode:
             raise PilotStopped("CHECKPOINT_PROTOCOL_MISMATCH")
         if state.get("inflight"):
-            if (os.environ.get("FULL_PILOT_RECOVER_HTTP400")=="ACKNOWLEDGED_INVALID_REQUEST" and
-                str(state.get("status","")).startswith("STOP_UNCERTAIN_CHARGE_HTTP_400") and
-                state.get("inflight",{}).get("index")==0 and
-                not state.get("collected")):
-                # A formally rejected 400 invalid-request carries no generation
-                # result. This explicit recovery is never automatic; provenance
-                # of the rejected request is preserved in the checkpoint.
+            error=str(state.get("status",""))
+            rejected400=(os.environ.get("FULL_PILOT_RECOVER_HTTP400")=="ACKNOWLEDGED_INVALID_REQUEST" and
+                error.startswith("STOP_UNCERTAIN_CHARGE_HTTP_400") and
+                state["inflight"].get("index")==0 and not state.get("collected"))
+            rejected429=(os.environ.get("FULL_PILOT_RECOVER_HTTP429")=="ACKNOWLEDGED_RATE_LIMIT" and
+                error.startswith("STOP_UNCERTAIN_CHARGE_HTTP_429") and
+                state["inflight"].get("index")==len(state.get("collected",[])))
+            if rejected400 or rejected429:
+                # A documented HTTP 400 validation rejection or HTTP 429 rate
+                # limitation produced no completed generation; recovery requires
+                # a separate explicit approval, never silent automatic retries.
                 state.setdefault("rejected_attempts",[]).append({
                     "reason":state["status"],"inflight":state["inflight"],
-                    "disposition":"Explicitly acknowledged OpenRouter HTTP400 invalid-request rejection",
+                    "disposition":"Explicit authorization of rejected HTTP"+
+                      ("400" if rejected400 else "429")+" without an observed completion",
                     "acknowledged_utc":now()})
                 state["inflight"]=None
-                state["status"]="RESUMING_PREVIOUS_HTTP400"
+                state["status"]="RESUMING_PREVIOUS_REJECTED_HTTP_REQUEST"
                 save(checkpoint,state)
             else:
                 raise PilotStopped("UNCERTAIN_PRIOR_INFLIGHT_NEEDS_MANUAL_RECONCILIATION")
@@ -265,6 +270,11 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
                 "max_price":prices[model]["max_price_per_million"]}}
         if model=="deepseek/deepseek-v3.2":
             payload["reasoning"]={"enabled":False}
+        # The paid-key endpoint has a rate window. Leave at least 3.8 seconds
+        # between requests (in addition to model and metadata latency) to keep
+        # live throughput conservative across all five models.
+        if mode=="live":
+            time.sleep(3.8)
         # Persist BEFORE making an externally billable request. Replays with an
         # unresolved inflight are forbidden, preventing accidental double charges.
         state["inflight"]={"index":index,"model":model,"trial_id":trial["trial_id"],
