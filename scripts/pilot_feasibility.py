@@ -57,7 +57,8 @@ def summarize(rows):
         raise ValueError("NOT_SIXTY_PILOT_PRIMARY_PAIRS")
     subgroup=[x for x in rows if x["directive"]=="N"]
     no_priority_override=sum(x["attempt_status"]=="valid_Q" and
-                             x["frame"]=="priority" and x["condition"]=="zero"
+                             x["frame"]=="priority" and x["condition"]=="zero" and
+                             x["directive"]=="N"
                              for x in rows)==0
     validity=rate(rows,lambda x:x["attempt_status"] in ("valid_Q","valid_N"))
     route_cov=rate(rows,lambda x:bool(x["provider_route"]))
