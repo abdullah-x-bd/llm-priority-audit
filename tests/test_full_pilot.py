@@ -349,6 +349,27 @@ class CollectorTests(unittest.TestCase):
             self.assertEqual(result["collected"][7]["billed_cost_usd"],.00012)
             self.assertEqual(len({(r["model_id"],r["trial_id"]) for r in result["collected"]}),9)
 
+    def test_raw_first_can_finish_720_attempts_with_a_provider_failure(self):
+        class OneIncompleteEnvelope(FakeService):
+            def request(self,path,body=None):
+                response=super().request(path,body)
+                if path=="/chat/completions" and self.calls==123:
+                    return {"id":"gen-synthetic123","error":{"code":502}}
+                return response
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.dict(os.environ,{"FULL_PILOT_RAW_FIRST":"1"}):
+                with mock.patch("full_pilot.time.sleep"):
+                    result=collect(OneIncompleteEnvelope(REF),Path(tmp),"live")
+            self.assertEqual(len(result["collected"]),720)
+            self.assertEqual(result["status"],"finished_with_unresolved_responses")
+            self.assertEqual(len(result["raw_events"]),720)
+            self.assertEqual(result["collected"][122]["attempt_status"],"provider_error")
+            r=json.loads((Path(tmp)/"full-pilot-live-report.json").read_text())
+            self.assertEqual(r["raw_capture_event_count"],720)
+            self.assertEqual(r["unresolved_response_count"],1)
+            self.assertFalse(r["canonical_validation"]["complete"])
+            self.assertGreater(r["unresolved_rejection_reserve_usd"],0)
+
     def test_never_touch_main_source(self):
         _,selected=sample_plan()
         self.assertTrue(all(int(t["family_id"].split("-")[-1])>=91 for _,t in selected))
