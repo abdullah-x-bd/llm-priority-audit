@@ -37,8 +37,10 @@ class PilotStopped(Exception):
     pass
 
 class APIProblem(PilotStopped):
-    def __init__(self, code):
+    def __init__(self, code, http_status=None, retry_after=None):
         self.code = code
+        self.http_status = http_status
+        self.retry_after = retry_after
         super().__init__(code)
 
 class Transport:
@@ -73,7 +75,16 @@ class Transport:
                 category=(typed[:40]+"_"+clean) if (typed or clean) else "unspecified"
             except Exception:
                 pass
-            raise APIProblem("HTTP_"+str(e.code)+"_"+category) from None
+            # Preserve status/backoff information without storing private headers.
+            retry_after=None
+            try:
+                candidate=float(e.headers.get("Retry-After",""))
+                if math.isfinite(candidate) and candidate>=0:
+                    retry_after=candidate
+            except (ValueError,TypeError,AttributeError):
+                pass
+            raise APIProblem("HTTP_"+str(e.code)+"_"+category,
+                             http_status=e.code,retry_after=retry_after) from None
         except (TimeoutError, urllib.error.URLError, OSError) as e:
             raise APIProblem("NETWORK_UNCERTAIN") from None
         except (ValueError, UnicodeError, TypeError):
