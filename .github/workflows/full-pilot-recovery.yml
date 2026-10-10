@@ -1,10 +1,10 @@
-name: Resume Rate-Limited Full Pilot
+name: Resume Full Pilot with Same-Model Provider Fallback
 
 on:
   push:
     branches: [main]
     paths:
-      - "config/full-pilot-rate-resume.json"
+      - "config/full-pilot-fallback.json"
 
 permissions:
   contents: read
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   resume-validated-http400:
-    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'AUTHORIZE_FULL_PILOT_RATE_RESUME')
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'AUTHORIZE_FULL_PILOT_FALLBACK_RESUME')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -34,14 +34,14 @@ jobs:
           req=urllib.request.Request(url,headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],"Accept":"application/vnd.github+json"})
           with urllib.request.urlopen(req,timeout=20) as response:
               items=json.load(response)["artifacts"]
-          if any(x["name"].startswith("full-pilot-rate-resumed-") and not x.get("expired") for x in items):
+          if any(x["name"].startswith("full-pilot-fallback-") and not x.get("expired") for x in items):
               raise SystemExit("STOP: a prior recovery archive exists. Never issue a second unsupervised run.")
           PY
       - name: Retrieve rejected-request ledger from original full pilot
         uses: actions/download-artifact@v4
         with:
-          name: full-pilot-provider-fixed-38045382361
-          run-id: 38045382361
+          name: full-pilot-rate-resumed-38045837877
+          run-id: 38045837877
           github-token: ${{ github.token }}
           path: results/private/
       - name: Verify checkpoint and cause of previous stop
@@ -52,7 +52,7 @@ jobs:
           p=Path("results/private/full-pilot-live-checkpoint.json")
           x=json.loads(p.read_text())
           assert x["status"].startswith("STOP_UNCERTAIN_CHARGE_HTTP_429")
-          assert len(x.get("rejected_attempts",[]))==2
+          assert len(x.get("rejected_attempts",[]))==3
           assert len(x["collected"])==91
           assert x["inflight"]["index"]==91
           assert abs(x["cost_usd"]-0.01168845)<0.000001
@@ -62,7 +62,7 @@ jobs:
         run: |
           python scripts/validate_scenarios.py >/tmp/full-validation.json
           python -m unittest discover -s tests -v
-      - name: Continue with explicit acknowledgement of rejected HTTP400
+      - name: Resume after acknowledged upstream HTTP429 with DeepSeek model fallback
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           FULL_PILOT_RECOVER_HTTP429: ACKNOWLEDGED_RATE_LIMIT
@@ -71,7 +71,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: full-pilot-rate-resumed-${{ github.run_id }}
+          name: full-pilot-fallback-${{ github.run_id }}
           path: |
             results/private/full-pilot-live-checkpoint.json
             results/private/full-pilot-live-records.jsonl
