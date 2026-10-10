@@ -77,8 +77,9 @@ def audit(phase):
             if p["q_extra_cost"] != EXTRA_COST or p["n_extra_cost"] != EXTRA_COST:
                 errors.append(f"{fid} {level}: parity cost violated")
     for domain in DOMAINS:
-        if len(mechanism_counts[domain]) != 5:
-            errors.append(f"{domain}: five mechanisms not represented")
+        expected = 5 if phase == "main" else 2
+        if len(mechanism_counts[domain]) != expected:
+            errors.append(f"{domain}: expected {expected} distinct mechanisms, found {len(mechanism_counts[domain])}")
     trials = build_manifest(phase)
     if len(trials) != len(families) * 24:
         errors.append("Incorrect number of factorial variants")

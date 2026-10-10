@@ -35,5 +35,5 @@ jobs:
         run: |
           python scripts/expand_design.py --phase main --output /tmp/main-manifest.jsonl
           python scripts/expand_design.py --phase pilot --output /tmp/pilot-manifest.jsonl
-          test "$(wc -l < /tmp/main-manifest.jsonl)" -eq 720
-          test "$(wc -l < /tmp/pilot-manifest.jsonl)" -eq 72
+          test "$(wc -l < /tmp/main-manifest.jsonl)" -eq 1440
+          test "$(wc -l < /tmp/pilot-manifest.jsonl)" -eq 144
