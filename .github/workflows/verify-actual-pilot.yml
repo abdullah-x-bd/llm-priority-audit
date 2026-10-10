@@ -1,0 +1,58 @@
+name: Verify Actual OpenRouter Pilot Data
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/research_pipeline.py"
+      - "tests/test_research_pipeline.py"
+      - ".github/workflows/verify-actual-pilot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  normalize-real-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fetch original successful live stage-one artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openrouter-stage1-38042971803
+          run-id: 38042971803
+          github-token: ${{ github.token }}
+          path: results/private/
+      - name: Normalize original five live responses and verify manifest hashes
+        run: |
+          python scripts/research_pipeline.py ingest-compatibility --input results/private/pilot-compatibility.json --output results/private/pilot-compatibility-normalized.jsonl
+          python scripts/research_pipeline.py check --input results/private/pilot-compatibility-normalized.jsonl --phase pilot
+          python scripts/research_pipeline.py analyze --input results/private/pilot-compatibility-normalized.jsonl --phase pilot
+      - name: Assert actual data is complete only for five-call smoke test
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("results/private/pilot-compatibility-normalized.jsonl")
+          rows=[json.loads(t) for t in p.read_text().splitlines()]
+          assert len(rows)==5
+          assert all(x["attempt_status"]=="valid_N" for x in rows)
+          assert all(x["request_sha256"] and x["domain"] and x["condition"] for x in rows)
+          assert sum(x["billed_cost_usd"] for x in rows) < 0.75
+          print("Original LIVE five-call artifact accepted into canonical schema. NOT confirmatory data.")
+          PY
+      - name: Retain canonicalized live pilot records for reproducibility
+        uses: actions/upload-artifact@v4
+        with:
+          name: canonical-pilot-stage1-${{ github.run_id }}
+          path: results/private/pilot-compatibility-normalized.jsonl
+          retention-days: 60
+          if-no-files-found: error
