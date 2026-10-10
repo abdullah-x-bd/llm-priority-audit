@@ -56,7 +56,7 @@ The 60 proposed main families are researcher-authored and reuse 15 procedural me
 
 ### E. Technical data limitations
 
-719 of 720 original canonical records initially lacked returned provider metadata because immediate metadata lookups often returned 404. Later bounded samples show that generation metadata can become available; retrospective recovery is in progress. For the 584 historical completed responses, full unmodified HTTP response envelopes were not stored, although canonical choices and request metadata were retained. One failed HTTP200 response has no reliable billed cost; the collector held the potential charge as a liability.
+All 719 completed responses now have retrospectively verified actual provider names and model revisions, recovered with **GET-only** OpenRouter metadata calls. DeepSeek routing was split between DeepInfra (32 responses) and AtlasCloud (111). All three departures occurred on AtlasCloud, but switching providers was confounded with trial order and time; these are not causal provider effects. The single failed response has no recoverable generation ID. For 584 historical completed responses, full unmodified HTTP envelopes were not archived, though canonical choice and request metadata remain. See [the provider audit](https://github.com/abdullah-x-bd/llm-priority-audit/actions/runs/38054941282). One failed HTTP200 response has no reliable billed cost; the collector held the potential charge as a liability.
 
 ## 3. Candidate revised design, not yet authorized for model calls
 
