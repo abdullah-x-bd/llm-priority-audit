@@ -1,6 +1,6 @@
 # Our statistical analysis plan, v1.0
 
-**Draft, not yet preregistered. No model outcomes have been generated.**
+**Draft, not yet preregistered. The completed 720-cell exploratory pilot produced 719 valid model choices and revealed a zero-override primary-arm floor effect. No confirmatory model outputs have been generated.**
 
 ## Unit and finite estimand
 
@@ -80,3 +80,7 @@ We implemented our primary matched estimator in `scripts/research_pipeline.py` a
 Statistical direction and practical magnitude are reported separately. A two-sided 95% mechanism-cluster interval that lies completely within ±10 percentage points can support **bounding effects of that magnitude** only under its inferential assumptions. An interval crossing zero with appreciable positive and negative effects remains **inconclusive**. We never declare an exact-zero effect from nonsignificance, and we refuse to produce a zero-width confidence interval for completely degenerate outcomes.
 
 We report worst-case invalid-response choice bounds, domain/model/quality/directive/letter diagnostics, and per-cell invalid rates. The secondary analyses have no preregistered multiplicity-controlled inference. See [the reproducibility and scientific claim audit](20-research-pipeline-readiness.md).
+
+## Evidence-based postpilot amendment, 2026-10-10
+
+The actual 720-attempt pilot produced no Q overrides under operator N and numeric parity in either frame (0/60 priority; 0/60 neutral). This is a strong sensitivity concern for the **current measurement regime**, not proof of a null causal effect or absence of model priorities. The previous assumption-based calibration with nonzero simulated baseline rates should not be described as an empirical guarantee of power for this design. New concise-directive and undirected candidate prompts are proposed as **separate, unapproved diagnostic arms**, not silently substituted into the main confirmatory hypothesis. The no-directive arm is an ordinary preference task, not an instruction-conflict test. The 7,200-call main run is blocked until external construct review, held-out feasibility calibration, frozen inference policy and registration. [Full decision](23-postpilot-scientific-decision.md).
