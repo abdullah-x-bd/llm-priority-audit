@@ -385,6 +385,11 @@ class CollectorTests(unittest.TestCase):
             self.assertEqual(len(previous["collected"]),3)
             self.assertEqual(previous["inflight"]["index"],3)
             self.assertIsNone(previous["unaccepted_response"]["returned_model"])
+            # Earlier production runs used the less precise legacy error name.
+            checkpoint=out/"full-pilot-live-checkpoint.json"
+            legacy=json.loads(checkpoint.read_text())
+            legacy["status"]="STOP_UNINTERPRETABLE_BILLING_OR_MODEL_MODEL_RETURNED_DIFFERENT_IDENTIFIER"
+            checkpoint.write_text(json.dumps(legacy),encoding="utf-8")
             second=FakeService(REF)
             with mock.patch.dict(os.environ,{
                   "FULL_PILOT_RAW_FIRST":"1",
