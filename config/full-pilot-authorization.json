@@ -1,6 +1,6 @@
 {
-  "protocol": "pilot-v1-factorial-20261010",
-  "maximum_calls": 720,
+  "stage1_compatibility_run_id": 38042971803,
   "total_pilot_inference_cap_usd": 0.75,
-  "stage1_compatibility_run_id": 38042971803
+  "maximum_calls": 720,
+  "protocol": "pilot-v1-factorial-20261010"
 }
