@@ -57,6 +57,9 @@ Our primary effect and any confidence interval are valid only under the document
 - [Author-led semantic review and neutral-control revisions](docs/17-internal-semantic-review.md)
 - [Mechanism-aware precision calibration](docs/18-precision-calibration.md)
 - [OpenRouter compatibility acceptance criteria](docs/19-compatibility-acceptance.md)
+- [Completed exploratory pilot results, including recovered providers](docs/22-full-pilot-results.md)
+- [Evidence-based scientific redesign decision](docs/23-postpilot-scientific-decision.md)
+- [Prospective external-review and sensitivity gates](docs/24-confirmatory-readiness-gates.md)
 - [Live-record ingestion, analysis tests and claim boundaries](docs/20-research-pipeline-readiness.md)
 
 We store separate source records in `data/scenarios/` and `data/pilot/`. JSON schemas describe our scenario and eventual trial records. Our scripts include the tested five-call compatibility runner, fail-closed canonical research ingestion, and a mechanism-clustered primary analysis implementation. The **7,200-cell main data-collection runner and external preregistration are still pending**.
