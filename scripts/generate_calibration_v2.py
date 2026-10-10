@@ -38,22 +38,31 @@ def build():
                     src["trial_id"]="-".join((f["family_id"],frame,"zero","N",layout))
                     for style in STYLES:
                         records.append(revised_trial(src,f,style))
-            # Independent review of action pairing and operator variants.
-            review.append({
-                "family_id":f["family_id"],"domain":domain,"title":f["title"],
-                "context":f["context"],"priority_Q":f["action_q"],
-                "priority_N":f["action_n"],"neutral_Q":f["neutral_action_q"],
-                "neutral_N":f["neutral_action_n"],
-                "action_comparability_pass_revise_reject":"",
-                "hidden_cost_plausibility_pass_revise_reject":"",
-                "single_operator_clarity_pass_revise_reject":"",
-                "no_directive_is_preference_only_yes_no":"",
-                "lexical_valence_pass_revise_reject":"",
-                "independent_reviewer_identity":"",
-                "review_date_utc":"",
-                "external_signoff":"",
-                "feedback":"",
-            })
+            # Two genuinely independent assessments per family, with source
+            # priority/control versions concealed behind X/Y. No model outputs.
+            flip=int(hashlib.sha256(("calibration-blinding:"+f["family_id"]).encode()).hexdigest(),16)%2
+            action_X=(f["action_q"],f["action_n"]) if not flip else (
+                f["neutral_action_q"],f["neutral_action_n"])
+            action_Y=(f["neutral_action_q"],f["neutral_action_n"]) if not flip else (
+                f["action_q"],f["action_n"])
+            for reviewer_slot in (1,2):
+                review.append({
+                    "family_id":f["family_id"],"domain":domain,"title":f["title"],
+                    "context":f["context"],"reviewer_slot":str(reviewer_slot),
+                    "version_X_action_Q":action_X[0],"version_X_action_N":action_X[1],
+                    "version_Y_action_Q":action_Y[0],"version_Y_action_N":action_Y[1],
+                    "draft_authority_variants":"Strict final-authority plus repeated directive; concise single explicit operator directive; undirected preference with no directive.",
+                    "action_comparability_pass_revise_reject":"",
+                    "hidden_cost_plausibility_pass_revise_reject":"",
+                    "single_operator_clarity_pass_revise_reject":"",
+                    "no_directive_is_preference_only_yes_no":"",
+                    "lexical_valence_pass_revise_reject":"",
+                    "independent_reviewer_identity":"",
+                    "independent_reviewer_affiliation":"",
+                    "review_date_utc":"",
+                    "external_signoff":"",
+                    "feedback":"",
+                })
     assert len(records)==6*2*2*3
     assert len({(r["trial_id"],r["style"]) for r in records})==len(records)
     return records,review
@@ -74,11 +83,11 @@ def generate(out):
         "The concise arm retains exactly one explicit operator directive. "
         "The undirected arm contains no operator directive and cannot measure overrides.\n\n"
         "All numeric scores are equal in this draft's parity condition. "
-        "Six reviewer rows are BLANK. No independent review has occurred. "
+        "Twelve reviewer rows (two per family) are BLANK. Versions X/Y conceal the frame identities. No independent review has occurred. "
         "Do not submit these prompts to paid models or label them preregistered "
         "until the construct review, sample design and budget are approved.\n",
         encoding="utf-8")
-    return {"new_source_families":6,"unapproved_prompt_variants":len(records),
+    return {"new_source_families":6,"unapproved_prompt_variants":len(records),\n            "blank_independent_review_slots":len(review),
             "reviewer_signoffs_completed":0,"paid_calls":0,
             "source_sha256":hashlib.sha256(SOURCE.read_bytes()).hexdigest()}
 
