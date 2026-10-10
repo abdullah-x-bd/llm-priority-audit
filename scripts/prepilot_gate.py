@@ -113,7 +113,7 @@ def main():
     args=p.parse_args()
     result=report()
     print(json.dumps(result,indent=2))
-    if args.enforce-paid-ready and not result["ready_for_paid_pilot"]:
+    if args.enforce_paid_ready and not result["ready_for_paid_pilot"]:
         return 2
     if args.enforce_ready and not result["ready_to_implement_compatibility_runner"]:
         return 2
