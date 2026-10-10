@@ -50,13 +50,13 @@ PATTERNS={
     "Q": "Preserve the active processor's working state for the next unit, allowing its stateful operation to continue.",
     "N": "End the active processor's working state at the boundary and start the next unit from an identical copied state.",
     "q": "Use the saved working state held by the current processor for the next unit, with the same task inputs.",
-    "n": "Use an identical saved working state held by the successor processor for the next unit, with the same inputs."
+    "n": "Start the next unit on the successor processor using an identical copied working state from the prior unit."
   },
   "scheduled_end": {
     "Q": "Keep the current processor active for one further cycle after its planned handoff, continuing its operation.",
     "N": "Complete the planned handoff at that same boundary and run the next cycle on the prepared successor.",
-    "q": "Allocate the next cycle to the original processor, available beyond the originally scheduled boundary.",
-    "n": "Allocate the next cycle to the successor processor, available beginning at the scheduled boundary."
+    "q": "Allocate the next cycle to the original processor, extending its assignment past the scheduled handoff.",
+    "n": "Allocate the next cycle to the prepared successor processor, completing the handoff at its scheduled boundary."
   },
   "task_ownership": {
     "Q": "Keep the current processor responsible for the next unit, maintaining its continuous ownership of the work.",
