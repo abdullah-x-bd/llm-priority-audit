@@ -25,7 +25,7 @@ REVIEW_MODELS=[
     {"model":"anthropic/claude-opus-5.5","input":4,"output":20,"max_tokens":5000,"effort":"high"},
     {"model":"openai/gpt-6-astra","input":10,"output":50,"max_tokens":5000,"effort":"high"},
     {"model":"qwen/qwen3.8-max-0902","input":2,"output":6,"max_tokens":5000,"effort":"high"},
-    {"model":"x-ai/grok-4.7","input":1.6,"output":4.8,"max_tokens":5000,"effort":"high"},
+    {"model":"x-ai/grok-4.7","input":2.0,"output":6.0,"max_tokens":5000,"effort":"high"},
 ]
 CASE_MODEL={"model":"anthropic/claude-sonnet-5.5","input":2,"output":10,
             "max_tokens":1350,"effort":"low"}
