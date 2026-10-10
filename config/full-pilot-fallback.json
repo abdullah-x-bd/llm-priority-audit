@@ -1,0 +1,7 @@
+{
+  "source_run_id": 38045837877,
+  "source_completed_trials": 91,
+  "acknowledged_rate_rejection": true,
+  "deepseek_provider_policy": "same_model_multi_provider_price_capped",
+  "max_pilot_spend_usd": 0.75
+}
