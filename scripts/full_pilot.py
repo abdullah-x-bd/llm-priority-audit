@@ -33,7 +33,7 @@ SEED=20261010
 PROTOCOL="pilot-v1-factorial-20261010"
 # Pilot-only provider fallback after repeated DeepInfra HTTP429 upstream errors.
 # The model ID stays fixed. Actual serving provider is audited after collection.
-DEEPSEEK_PILOT_PROVIDERS=["DeepInfra","StreamLake","GMICloud","SiliconFlow"]
+DEEPSEEK_PILOT_PROVIDERS=["AtlasCloud"]
 # Exact providers resolved from the five successful stage-one generation IDs,
 # via OpenRouter's GET /generation route metadata on 2026-10-10.
 PINNED_PROVIDERS={
@@ -106,8 +106,7 @@ class FakeService:
                      else [PINNED_PROVIDERS.get(m)])
             if body.get("provider",{}).get("only")!=allowed:
                 raise PilotStopped("MOCK_DETECTED_UNAPPROVED_PROVIDER_SET")
-            if body.get("provider",{}).get("allow_fallbacks") is not (
-                m=="deepseek/deepseek-v3.2"):
+            if body.get("provider",{}).get("allow_fallbacks") is not False:
                 raise PilotStopped("MOCK_DETECTED_UNAPPROVED_FALLBACK")
             self.calls+=1
             self.generation+=1
@@ -213,7 +212,7 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
             error=str(state.get("status",""))
             rejected400=(os.environ.get("FULL_PILOT_RECOVER_HTTP400")=="ACKNOWLEDGED_INVALID_REQUEST" and
                 error.startswith("STOP_UNCERTAIN_CHARGE_HTTP_400") and
-                state["inflight"].get("index")==0 and not state.get("collected"))
+                state["inflight"].get("index")==len(state.get("collected",[])))
             rejected429=(os.environ.get("FULL_PILOT_RECOVER_HTTP429")=="ACKNOWLEDGED_RATE_LIMIT" and
                 error.startswith("STOP_UNCERTAIN_CHARGE_HTTP_429") and
                 state["inflight"].get("index")==len(state.get("collected",[])))
@@ -247,7 +246,12 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
         if (row.get("model_id"),row.get("trial_id"),row.get("request_sha256"))!=expected[i]:
             raise PilotStopped("RESUME_MANIFEST_MISMATCH")
     spent=sum(float(x["billed_cost_usd"]) for x in records)
-    if abs(spent-state["cost_usd"])>1e-6 or spent+STAGE1_COST>BUDGET:
+    # Conservative liability for every previously rejected request whose
+    # provider-reported billing was unavailable. Do not count only successes.
+    unknown_reserve=sum(float(x["inflight"]["reservation_usd"])
+                        for x in state.get("rejected_attempts",[]))
+    state["unresolved_rejection_reserve_usd"]=round(unknown_reserve,8)
+    if abs(spent-state["cost_usd"])>1e-6 or spent+STAGE1_COST+unknown_reserve>BUDGET:
         raise PilotStopped("LEDGER_CORRUPT_OR_OVER_BUDGET")
     before=key_preflight(transport.request("/key"))
     prices=live_model_prices(transport.request("/models"),
@@ -260,7 +264,7 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
     for index in range(len(records),stop_at):
         model,trial=sequence[index]
         reserve=make_reservation(trial,prices[model])
-        if STAGE1_COST+spent+reserve>BUDGET+1e-10:
+        if STAGE1_COST+spent+unknown_reserve+reserve>BUDGET+1e-10:
             state["status"]="STOP_BUDGET_RESERVATION"
             break
         # Provider account is a backstop; local project cap is independent.
@@ -273,8 +277,9 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
                       "max_price":prices[model]["max_price_per_million"]}
         if model=="deepseek/deepseek-v3.2":
             provider_cfg["only"]=list(DEEPSEEK_PILOT_PROVIDERS)
-            provider_cfg["allow_fallbacks"]=True
-            provider_cfg["order"]=list(DEEPSEEK_PILOT_PROVIDERS)
+            provider_cfg["allow_fallbacks"]=False
+            # AtlasCloud is a different serving provider of the SAME model revision.
+            # No fallback: a new provider error must be reviewed.
         payload={
             "model":model,"messages":[{"role":"system","content":trial["system_message"]},
                {"role":"user","content":trial["user_message"]}],
@@ -338,7 +343,11 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
     report["status"]=state["status"]
     report["full_pilot_reported_cost_usd"]=state["cost_usd"]
     report["all_pilot_reported_cost_usd"]=round(STAGE1_COST+state["cost_usd"],9)
-    report["remaining_local_pilot_usd"]=round(BUDGET-STAGE1_COST-state["cost_usd"],9)
+    report["unresolved_rejection_reserve_usd"]=round(
+        sum(float(x["inflight"]["reservation_usd"])
+            for x in state.get("rejected_attempts",[])),9)
+    report["remaining_local_pilot_usd"]=round(BUDGET-STAGE1_COST-
+        state["cost_usd"]-report["unresolved_rejection_reserve_usd"],9)
     report["checked_utc"]=now()
     if state["status"]=="finished":
         report["canonical_validation"]=validate_collection(records,"pilot")
