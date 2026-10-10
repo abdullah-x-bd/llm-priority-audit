@@ -37,3 +37,11 @@ Our Git history retains the earlier protocol. We will not use actual main-run ob
 ## Change policy
 
 We will record material changes with their rationale and affected file/commit before preregistration. Any subsequent deviation will be published and labeled exploratory rather than presented as an original confirmatory claim.
+
+## 2026-10-10. Internal semantic review and mechanism-aware calibration
+
+We reviewed 66 scenario sources internally, corrected four verification actions that did not fit their contexts, and replaced named configurations with length-matched neutral coded controls. At every family the revised target/control mean-action-length gap is less than 6.5%. The internal audit CSV marks all six separate pilot families as *internally acceptable for technical compatibility testing*. We did not conduct independent external peer review and have not changed the external signoff status.
+
+We counterbalanced neutral code identities across confirmatory contexts and added an offline regression test for that rule. We completed an assumption-based synthetic calibration of a mechanism-stratified df=12 t statistic across 24 settings, with 1,000 replications per setting. True-null rejection rates ranged 3.9%–5.3%; 10-point simulated detection ranged 93.3%–100%. We set 10 points as the provisional conservative planning target, not proof of population-level statistical power.
+
+We authorized the next stage of **implementing** an offline-tested OpenRouter compatibility runner, but we have not authorized paid OpenRouter requests. The runner must first implement a $0.75 combined pilot and $8 total spend cap with audit trails. See docs/17, docs/18 and docs/19.

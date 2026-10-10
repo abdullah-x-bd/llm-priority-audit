@@ -54,3 +54,11 @@ To require **full signed readiness** rather than a diagnostic report, run `pytho
 ## Remaining action
 
 We will use `docs/13-independent-review.md` for the independent scenario review and only then resolve whether the existing neutral control wording is adequate or requires controlled revision *before* any pilot observations.
+
+## Addendum following internal remediation
+
+The original neutral-control wording and context-mismatch findings in this audit were addressed **after** its initial release. Our author-led review and modifications are recorded in [docs/17](17-internal-semantic-review.md). The updated maximum per-family control/target action-length gap is under 6.5%, and all four previously incongruent verification actions have been corrected. The two neutral configuration codes in each pair are counterbalanced across matched confirmatory contexts.
+
+We also completed a 15-mechanism statistical calibration on simulated data, reported in [docs/18](18-precision-calibration.md). The calibrated planning target is an effect of approximately 10 percentage points under the modeled conditions.
+
+**Revised stage-gate interpretation:** We may develop and dry-run the OpenRouter compatibility runner now. We may not send paid API calls until that runner demonstrably enforces the spending, routing and logging rules in [docs/19](19-compatibility-acceptance.md). Independent external semantic signoff is still missing and remains a scientific reporting gate, not something this internally conducted review could satisfy.

@@ -46,3 +46,7 @@ Therefore, we must measure actual costs and reasoning-token usage on the separat
 ## Guardrails
 
 We will set an account/runtime spending limit, monitor actual provider usage, permit only a bounded number of simultaneous requests and record all transport failures. We will not run model evaluations until the methodological gates pass.
+
+## Compatibility-stage spending restriction
+
+We reserve **at most $0.75 of the $8 total inference ceiling for the compatibility pilot**. The runner must also enforce conservative per-request budget reservations and use a dedicated API key with a suitable credit cap if available. A technical model-compatibility runner does not yet exist, so **no paid calls are authorized** by the offline gate. We will measure actual reasoning, input/output tokens, provider routes and billed cost using only the six distinct pilot families before freezing the final confirmatory roster. See [compatibility acceptance](19-compatibility-acceptance.md).

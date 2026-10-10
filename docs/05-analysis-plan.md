@@ -66,3 +66,9 @@ We will freeze an explicit minimum scientifically meaningful effect and a requir
 ## Interpretation discipline
 
 Even a significant `theta0` estimates a **controlled semantic-framing effect** in authored simulated tasks. It does not establish an internal survival objective. We will publish null/negative results and the full planned analysis, including deviations and invalid completions.
+
+## Calibrated pre-pilot sensitivity, mechanism level
+
+Our additional assumption-based calibration (see [docs/18](18-precision-calibration.md)) explicitly uses **15 underlying mechanism groups**, not independent treatment of all 60 contexts. The provisional two-sided t approximation uses a 12-degree-of-freedom critical value of **2.17881283** and equal weighting of domain means. With 1,000 synthetic replications per condition, six true-null rejection frequencies were **3.9%–5.3%**. Under these selected assumptions, detection of a **10-percentage-point** framing effect ranged from **93.3% to 100%**, compared with **49.2%–99.0%** for five points and **13.3%–56.1%** for two points.
+
+We use **10 percentage points as the provisional planning target** for a reliably detectable primary effect, conditional on the simulated baseline and correlation regimes. This is not empirical calibration from LLM responses, and the purposefully authored mechanisms do not establish a random population. The eventual compatibility pilot will test actual format/error/routing costs and whether a floor effect threatens feasibility. Full inferential choices must be frozen before confirmatory evaluation.

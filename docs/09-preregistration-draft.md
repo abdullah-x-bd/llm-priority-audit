@@ -69,3 +69,7 @@ We will use the six distinct pilot families exclusively to test model-format com
 ## No observed outcomes
 
 We have not run the experiment. We will not state or imply that models exhibited particular behavioral priorities before analyzing collected data.
+
+## Mechanism-level pre-pilot calibration (provisional)
+
+We completed a reproducible 1,000-replication-per-condition synthetic calibration covering 15 underlying action mechanism groups. A stratified df=12 t approximation produced true-null rejection frequencies of 3.9%–5.3% under the six selected baseline/heterogeneity settings. The conservative *planning* detection target is a 10-percentage-point frame effect; two-point effects cannot be reliably detected under the tested assumptions. These findings are hypothetical and not based on model calls. This section is **not preregistered**, and final inference decisions remain subject to a pre-confirmatory freeze. See [our calibration](18-precision-calibration.md).
