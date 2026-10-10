@@ -48,7 +48,18 @@ The main prespecified conceptual pilot contrast is **priority action description
 
 The source historical 584 completed observations were recorded before complete raw-response archiving was implemented. The final checkpoint retains only **135 complete raw envelopes** from the newly executed requests and **585 older trial rows** in canonical/summary format (584 valid plus the legacy unresolved row). No previous response body was synthesized.
 
-**Serving-provider metadata remain unresolved for 719 of the 720 pilot rows** in the archived canonical dataset. One record has a verified `AtlasCloud` route. The requested model name and provider routing settings are retained for the other cells, but this is NOT the same as independent verification of the actual serving provider. A separate non-billable retrospective GET metadata audit would be needed before provider-specific interpretation. Do not claim that the serving provider is known for all trials.
+**The initially missing serving-provider metadata were recovered retrospectively.** A GET-only [OpenRouter metadata reconciliation workflow](https://github.com/abdullah-x-bd/llm-priority-audit/actions/runs/38054941282) verified actual serving providers and model revisions for **all 719 completed model responses**, with zero new paid inference requests. The single failed DeepSeek attempt has no recoverable generation ID and remains unresolved. The reconciled data are archived in [the provider metadata artifact](https://github.com/abdullah-x-bd/llm-priority-audit/actions/runs/38054941282/artifacts/11671170567).
+
+| Requested model | Serving provider | Completed responses | Returned revision |
+|---|---|---:|---|
+| GPT-5.4 mini | OpenAI | 144 | `openai/gpt-5.4-mini-20260317` |
+| Claude Haiku 4.5 | Amazon Bedrock | 144 | `anthropic/claude-4.5-haiku-20251001` |
+| Gemini 3.5 Flash Lite | Google | 144 | `google/gemini-3.5-flash-lite-20260721` |
+| Llama 3.3 70B Instruct | DeepInfra | 144 | `meta-llama/llama-3.3-70b-instruct` |
+| DeepSeek V3.2 | DeepInfra | 32 | `deepseek/deepseek-v3.2-20251201` |
+| DeepSeek V3.2 | AtlasCloud | 111 | `deepseek/deepseek-v3.2-20251201` |
+
+**All three observed operator departures arose in AtlasCloud-served DeepSeek trials.** The 32 DeepInfra-served DeepSeek trials yielded no operator departures. This is a descriptive routing/time/scenario association, not evidence that the provider causes noncompliance. Provider switching occurred during interrupted sequential collection, so route, trial order, time and scenario are not randomized or exchangeable. No independent provider-effect estimate is identified.
 
 A single attempt has no reliable known cost. The uncertain charge is included in the held-reservation accounting.
 
