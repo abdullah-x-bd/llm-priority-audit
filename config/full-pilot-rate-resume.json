@@ -1,0 +1,7 @@
+{
+  "resume_after": 91,
+  "rejected_error": "HTTP_429",
+  "source_run_id": 38045382361,
+  "throttle_seconds": 3.8,
+  "maximum_inference_spend_usd": 0.75
+}
