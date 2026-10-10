@@ -1,0 +1,47 @@
+name: OpenRouter Pilot Stage 1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "config/pilot-launch.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: llm-priority-audit-openrouter-stage1
+  cancel-in-progress: false
+
+jobs:
+  stage-one:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out fixed source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Preflight design and fault tests
+        run: |
+          python scripts/validate_scenarios.py > /tmp/design-audit.json
+          python -m unittest discover -s tests -v
+          python scripts/prepilot_gate.py --enforce-ready > /tmp/author-review-gate.json
+      - name: Dry-run complete stage one without network
+        run: python scripts/pilot_compatibility.py --mode mock
+      - name: Five-model capped compatibility pilot
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python scripts/pilot_compatibility.py --mode live
+      - name: Preserve trial and billing report even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openrouter-stage1-${{ github.run_id }}
+          path: results/private/pilot-compatibility.json
+          if-no-files-found: warn
+          retention-days: 14

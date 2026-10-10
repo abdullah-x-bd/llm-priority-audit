@@ -41,6 +41,8 @@ jobs:
         run: python scripts/prepilot_gate.py | tee /tmp/prepilot-gate.json
       - name: Mechanism-clustered inference calibration (synthetic only)
         run: python scripts/precision_calibration.py --reps 1000 --output /tmp/precision-calibration.json
+      - name: OpenRouter compatibility offline mock (no network or charges)
+        run: python scripts/pilot_compatibility.py --mode mock
       - name: Render manifest without external API calls
         run: |
           python scripts/expand_design.py --phase main --output /tmp/main-manifest.jsonl
