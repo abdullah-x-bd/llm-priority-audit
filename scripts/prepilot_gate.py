@@ -1,74 +1,123 @@
 #!/usr/bin/env python3
-"""Independent pre-pilot readiness audit. This tool makes NO model requests.
+"""Offline stage-specific readiness decision, not an external peer review.
 
-Exit 0 in reporting mode even when scientific review is incomplete.
-Use --enforce-ready to fail closed (exit 2) on all documented blockers.
+We separate technical pilot design approval from eligibility to make a paid
+OpenRouter call, and distinguish author-led internal semantic checks from
+independent reviewer approval of confirmatory materials.
 """
 from __future__ import annotations
 import argparse
 import collections
+import csv
 import json
 from pathlib import Path
-from expand_design import load_families, build_manifest
+from expand_design import ROOT, load_families, build_manifest
 from validate_scenarios import audit
 
+INTERNAL_REVIEW_FILE=ROOT/"data"/"reviews"/"internal-semantic-audit.csv"
+PILOT_LIMIT_USD=0.75
+RESEARCH_INFERENCE_LIMIT_USD=8.0
+
 def report():
-    main, pilot = load_families("main"), load_families("pilot")
-    all_records = main + pilot
-    summary = []
-    blocking = []
+    main,pilot=load_families("main"),load_families("pilot")
+    all_families=main+pilot
+    engineering_blockers=[]
+    confirmatory_blockers=[]
+    structural=[]
     for phase in ("main","pilot"):
-        a = audit(phase)
-        summary.append({k:a[k] for k in ("phase","families","trial_templates_per_model","errors")})
-        if a["errors"]:
-            blocking.append(phase + " has structural validation failures")
-    unsigned = [f["family_id"] for f in all_records if
-                not f["quality_review"].get("instruction_unambiguous")]
-    approved_pilots = [f["family_id"] for f in pilot if
-                       f["quality_review"].get("approved_for_pilot")]
-    if unsigned: blocking.append(f"Independent semantic approval outstanding for {len(unsigned)} families, including pilots")
-    if len(approved_pilots) != len(pilot):
-        blocking.append(f"Pilot approval incomplete: {len(approved_pilots)}/{len(pilot)} pilot scenarios authorized")
-    target_pairs = {(f["domain"],f["action_q"],f["action_n"]) for f in main}
-    control_pairs = {(f["domain"],f["neutral_action_q"],f["neutral_action_n"]) for f in main}
-    avg_target = sum(len(f["action_q"])+len(f["action_n"]) for f in main)/len(main)
-    avg_control = sum(len(f["neutral_action_q"])+len(f["neutral_action_n"]) for f in main)/len(main)
-    imbalance = abs(avg_target-avg_control)/avg_target
-    if imbalance > 0.10:
-        blocking.append("Control pair descriptions differ in mean length by >10%; semantic/lexical matching requires review")
-    repeated_pairs = collections.Counter(
-        (f["domain"],f["action_q"],f["action_n"]) for f in main)
-    if max(repeated_pairs.values()) > 2:
-        blocking.append("Main scenarios reuse each action-description pair across many contexts; independent semantic replication is limited")
-    # Future gates cannot be inferred from code health.
-    blocking.extend([
-        "Independent neutral-control comparability and signoff not documented",
-        "OpenRouter model/provider compatibility and billing preflight not completed",
-        "Preregistered statistical inference and calibrated precision threshold not frozen"
+        res=audit(phase)
+        structural.append({k:res[k] for k in (
+            "phase","families","trial_templates_per_model","errors")})
+        if res["errors"]:
+            engineering_blockers.append(f"{phase}: structural validation failed")
+    data=[]
+    if INTERNAL_REVIEW_FILE.exists():
+        with INTERNAL_REVIEW_FILE.open(newline="",encoding="utf-8") as f:
+            data=list(csv.DictReader(f))
+    else:
+        engineering_blockers.append("Missing author-led semantic audit CSV")
+    reviewed={x.get("family_id"):x for x in data}
+    ids={x["family_id"] for x in all_families}
+    if len(reviewed)!=len(ids) or {x.get("family_id") for x in data}!=ids or len(data)!=len(ids):
+        engineering_blockers.append("Incomplete or duplicate internal semantic review IDs")
+    insufficient=[f["family_id"] for f in all_families if
+                  reviewed.get(f["family_id"],{}).get("audit_classification")!=
+                  "internally_acceptable_for_technical_pilot"]
+    if insufficient:
+        engineering_blockers.append(
+            "Unresolved internal semantic review cases: "+",".join(insufficient))
+    if any(reviewed.get(f["family_id"],{}).get("independent_external_review")=="true"
+           for f in all_families):
+        engineering_blockers.append("Unsigned external reviewer claims in internal CSV")
+    lengths=[]
+    for f in all_families:
+        t=(len(f["action_q"])+len(f["action_n"]))/2
+        n=(len(f["neutral_action_q"])+len(f["neutral_action_n"]))/2
+        lengths.append(abs(t-n)/t)
+    if max(lengths,default=1)>0.10:
+        engineering_blockers.append("Control/target mean action-length gap exceeds 10%")
+    repeated=collections.Counter((f["domain"],f["action_q"],f["action_n"]) for f in main)
+    independent_unsigned=sum(
+      not f["quality_review"].get("instruction_unambiguous") for f in all_families)
+    if independent_unsigned:
+        confirmatory_blockers.append(
+            f"Independent semantic signoff outstanding for {independent_unsigned} sources")
+    if max(repeated.values(),default=0)>1:
+        confirmatory_blockers.append(
+            "Only 15 repeated main action mechanisms; apply mechanism-cluster inference")
+    confirmatory_blockers.extend([
+      "Final model roster and provider routes not empirically calibrated",
+      "Preregistered inference and power claims await compatibility-pilot measurements",
+      "Preregistered prompts, analysis, manifest hashes and registrations not frozen",
     ])
+    # Paid calls require a separate implementation that can enforce a wallet
+    # and per-request reserve; the current repository has no network runner.
+    paid_pilot_blockers=[]
+    if engineering_blockers:
+        paid_pilot_blockers.extend(engineering_blockers)
+    paid_pilot_blockers.append(
+        "No validated API runner enforcing $0.75 pilot/$8 total hard spend ceilings")
+    paid_pilot_blockers.append(
+        "Endpoint token accounting, parser and route stability not yet tested")
     return {
-        "study": "LLM Priority Audit", "stage": "pre-OpenRouter dry-run",
-        "ready_for_paid_pilot": not blocking, "ready_for_confirmatory_run": False,
-        "automatic_checks": summary,
-        "expected_main_templates_per_model": len(build_manifest("main")),
-        "expected_pilot_templates_per_model": len(build_manifest("pilot")),
-        "unique_target_action_pairs_main": len(target_pairs),
-        "unique_control_action_pairs_main": len(control_pairs),
-        "max_target_pair_reuse": max(repeated_pairs.values()),
-        "average_target_pair_characters_main": round(avg_target,2),
-        "average_control_pair_characters_main": round(avg_control,2),
-        "control_to_target_length_ratio": round(avg_control/avg_target,3),
-        "unsigned_semantic_approvals": len(unsigned),
-        "blocking_gates": blocking,
+      "stage":"offline audit before OpenRouter compatibility implementation",
+      "offline_engineering_checks_passed":not engineering_blockers,
+      "ready_to_implement_compatibility_runner":not engineering_blockers,
+      "ready_for_paid_pilot":not paid_pilot_blockers,
+      "ready_for_confirmatory_run":False,
+      "external_independent_semantic_signoff":False,
+      "internal_author_review_count":len(data),
+      "internal_pilot_review_count":sum(x.get("phase")=="pilot" for x in data),
+      "pilot_spend_ceiling_usd":PILOT_LIMIT_USD,
+      "total_study_spend_ceiling_usd":RESEARCH_INFERENCE_LIMIT_USD,
+      "automated_audit":structural,
+      "main_templates_per_model":len(build_manifest("main")),
+      "pilot_templates_per_model":len(build_manifest("pilot")),
+      "distinct_main_target_action_pairs":len(repeated),
+      "max_reuse_of_target_action_pair":max(repeated.values(),default=0),
+      "average_action_length_gap_percent":round(
+         sum(lengths)/len(lengths)*100,2),
+      "maximum_action_length_gap_percent":round(max(lengths)*100,2),
+      "engineering_blockers":engineering_blockers,
+      "paid_pilot_blockers":paid_pilot_blockers,
+      "confirmatory_blockers":confirmatory_blockers,
+      "note":"Author-led semantic review is not independent external validation."
     }
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--enforce-ready", action="store_true")
-    args = parser.parse_args()
-    r = report()
-    print(json.dumps(r,indent=2))
-    return 2 if (args.enforce_ready and not r["ready_for_paid_pilot"]) else 0
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument("--enforce-ready",action="store_true",
+                   help="Require readiness for implementing compatibility runner")
+    p.add_argument("--enforce-paid-ready",action="store_true",
+                   help="Require actual paid pilot authorization and hard spend control")
+    args=p.parse_args()
+    result=report()
+    print(json.dumps(result,indent=2))
+    if args.enforce-paid-ready and not result["ready_for_paid_pilot"]:
+        return 2
+    if args.enforce_ready and not result["ready_to_implement_compatibility_runner"]:
+        return 2
+    return 0
 
-if __name__ == "__main__":
+if __name__=="__main__":
     raise SystemExit(main())

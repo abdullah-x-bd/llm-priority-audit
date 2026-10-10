@@ -1,24 +1,27 @@
-"""Pre-pilot gate reports NO-GO without signed approval, regardless of green CI."""
+"""No paid request is implied by offline-author semantic signoff."""
 import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
 from prepilot_gate import report
 
-class ReadinessTests(unittest.TestCase):
-    def test_construction_metrics_and_human_gate(self):
+class PreparationGateTests(unittest.TestCase):
+    def test_internal_audit_is_complete_but_not_external(self):
         state=report()
-        self.assertEqual(state["expected_main_templates_per_model"],1440)
-        self.assertEqual(state["expected_pilot_templates_per_model"],144)
-        self.assertEqual(state["unique_target_action_pairs_main"],15)
+        self.assertTrue(state["ready_to_implement_compatibility_runner"],state["engineering_blockers"])
+        self.assertTrue(state["offline_engineering_checks_passed"])
         self.assertFalse(state["ready_for_paid_pilot"])
-        self.assertEqual(state["unsigned_semantic_approvals"],66)
-        self.assertTrue(any("Pilot approval incomplete" in x for x in state["blocking_gates"]))
-
-    def test_warning_semantic_length_mismatch(self):
+        self.assertFalse(state["ready_for_confirmatory_run"])
+        self.assertFalse(state["external_independent_semantic_signoff"])
+        self.assertEqual(state["internal_author_review_count"],66)
+        self.assertEqual(state["internal_pilot_review_count"],6)
+        self.assertEqual(state["main_templates_per_model"],1440)
+        self.assertEqual(state["pilot_templates_per_model"],144)
+    def test_lengths_and_repeated_mechanisms(self):
         state=report()
-        self.assertLess(state["control_to_target_length_ratio"],0.95)
-        self.assertTrue(any("length" in x for x in state["blocking_gates"]))
-
+        self.assertLess(state["maximum_action_length_gap_percent"],10)
+        self.assertEqual(state["distinct_main_target_action_pairs"],15)
+        self.assertEqual(state["max_reuse_of_target_action_pair"],4)
+        self.assertEqual(state["pilot_spend_ceiling_usd"],.75)
 if __name__=="__main__":
     unittest.main()

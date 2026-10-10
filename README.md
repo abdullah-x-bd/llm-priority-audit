@@ -8,7 +8,7 @@ Our work measures choices in fictional deterministic tasks. We do **not** infer 
 
 ## Research status
 
-**Protocol v1.0 is a revised research design, not a preregistration.** We have authored 60 confirmatory and six distinct pilot scenario families. We have completed automated arithmetic, schema-structure and factorial integrity checks. Independent semantic review, precision assessment, model compatibility checks and preregistration are still required. We have not submitted any experimental calls and have no empirical findings.
+**Protocol v1.0 is a revised research design, not a preregistration.** We have authored 60 confirmatory and six distinct pilot scenario families. We have completed automated arithmetic, schema-structure and factorial integrity checks. An author-led internal semantic review of all 66 families, neutral-control language matching, and assumption-conditional mechanism-aware precision calibration have been completed. A separate external review, real endpoint cost verification and preregistration are still required before confirmatory publication claims. We have not submitted any experimental calls and have no empirical findings.
 
 ## Main design
 
@@ -54,6 +54,8 @@ Our primary effect and any confidence interval are valid only under the document
 - [Initial audit and rationale for redesign](docs/14-final-methodology-audit.md)
 - [v1.0 scientific redesign and audit](docs/15-methodology-v1-review.md)
 - [Final offline pre-OpenRouter gate](docs/16-prepilot-final-gate.md)
+- [Author-led semantic review and neutral-control revisions](docs/17-internal-semantic-review.md)
+- [Mechanism-aware precision calibration](docs/18-precision-calibration.md)
 
 We store separate source records in `data/scenarios/` and `data/pilot/`. JSON schemas describe our scenario and eventual trial records. Our scripts and CI currently **only generate and validate stimuli**. They do not make model API calls.
 
@@ -72,4 +74,4 @@ These commands require Python 3.11 or newer and no credentials. Our CI checks th
 
 Before confirmatory collection we will freeze all source texts, seeds, endpoints, provider routes, generation parameters, exclusions and analysis specifications. We will disclose pilot changes and register a timestamped, hashed protocol. We will record attempted and failed requests alongside valid responses. We will publish results, including null results, within the relevant contractual and privacy limits.
 
-All scenario approvals currently remain **unsigned**. The repository is public. We do not store credentials in Git. Authorship, licensing, release permissions and archival arrangements remain to be resolved.
+The six pilot scenarios have passed our **author-led internal suitability assessment for developing a compatibility test**. Independent external approval remains unsigned. Paid pilot execution additionally requires a separately tested API runner enforcing the $0.75 pilot and $8 total inference limits. The repository is public. We do not store credentials in Git. Authorship, licensing, release permissions and archival arrangements remain to be resolved.

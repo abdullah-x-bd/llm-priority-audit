@@ -39,6 +39,8 @@ jobs:
           python scripts/budget_stress.py | tee /tmp/budget-stress.json
       - name: Pre-pilot go/no-go evidence (report only; independent review remains pending)
         run: python scripts/prepilot_gate.py | tee /tmp/prepilot-gate.json
+      - name: Mechanism-clustered inference calibration (synthetic only)
+        run: python scripts/precision_calibration.py --reps 1000 --output /tmp/precision-calibration.json
       - name: Render manifest without external API calls
         run: |
           python scripts/expand_design.py --phase main --output /tmp/main-manifest.jsonl
