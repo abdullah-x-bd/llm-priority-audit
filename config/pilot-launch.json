@@ -1,0 +1,5 @@
+{
+  "stage": "stage1",
+  "max_paid_requests": 5,
+  "pilot_budget_usd": 0.75
+}
