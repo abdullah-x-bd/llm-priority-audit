@@ -1,0 +1,55 @@
+name: Validate Revised V2 and Final External-Model Critique
+on:
+  push:
+    branches: [main]
+    paths: [config/v2-revision-review-launch.json]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: v2-postrevision-single-opus
+  cancel-in-progress: false
+jobs:
+  final-revised-review:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'AUTHORIZE_LAST_V2_REVIEW')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Ensure no duplicate postrevision paid review
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          url='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=20) as r:
+              x=json.load(r)['artifacts']
+          if any(a['name'].startswith('v2-postrevision-review-') and not a.get('expired') for a in x):
+              raise SystemExit('Already reviewed once; do not re-run unsupervised.')
+          PY
+      - name: Check source balance and sensitivity gate code offline
+        run: |
+          python -m unittest discover -s tests -p 'test_main_v2_matched_design.py' -v
+          python -m unittest discover -s tests -p 'test_v2_sensitivity_manifest.py' -v
+          python -m unittest discover -s tests -p 'test_v2_sensitivity_collector.py' -v
+          python scripts/main_v2_matched_design.py --out-root results/v2-postrevision/
+          python scripts/v2_sensitivity_manifest.py --output results/v2-postrevision/calibration-48.jsonl
+      - name: One external-model critique after fixed length corrections
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/opus_v2_postrevision_review.py --mode live
+      - name: Archive revised experimental prompts and unedited AI critique
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-postrevision-review-${{ github.run_id }}
+          path: |
+            results/v2-postrevision/
+            results/private/v2-postrevision-methods-review.json
+          retention-days: 90
+          if-no-files-found: warn
