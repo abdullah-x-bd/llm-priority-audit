@@ -71,7 +71,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: full-pilot-provider-fixed-${{ github.run_id }}
+          name: full-pilot-rate-resumed-${{ github.run_id }}
           path: |
             results/private/full-pilot-live-checkpoint.json
             results/private/full-pilot-live-records.jsonl
