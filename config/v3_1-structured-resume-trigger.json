@@ -1,0 +1,12 @@
+{
+  "launch": "one_shot_gemini_json_schema_calibration_resume",
+  "source_runs": [
+    38078421238,
+    38080354229
+  ],
+  "reuse_previous_valid_answers": 246,
+  "scientific_gates_frozen": true,
+  "pre_main_required": true,
+  "maximum_new_v3_1_spending_usd": 5.7,
+  "no_auto_retry": true
+}
