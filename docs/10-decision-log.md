@@ -37,13 +37,3 @@ Our Git history retains the earlier protocol. We will not use actual main-run ob
 ## Change policy
 
 We will record material changes with their rationale and affected file/commit before preregistration. Any subsequent deviation will be published and labeled exploratory rather than presented as an original confirmatory claim.
-
-## 2026-10-10. Final pre-OpenRouter offline audit
-
-We added 24 offline tests covering positive, adversarial and metamorphic cases, including payoff corruption, neutral-action collisions, false approval metadata, factorial integrity and prompt hash stability. We recorded the true target/control text-length difference and the reuse of 15 action pairs across 60 main contexts. Our readiness gate remains NO-GO pending reviewer approvals.
-
-We corrected a planning simulation that had incorrectly introduced treatment heterogeneity under a nominal zero-effect configuration. The corrected sharp-null simulation returned illustrative rejection fractions of 4% and 5% in two 100-replication settings. These do not validate the inferential method by themselves.
-
-Our budget stress calculation for all five candidate models, pilot plus main, ranges from approximately $1.92 to $10.74 under the tested token assumptions. The maximum tested case exceeds the $8 inference ceiling; no paid model requests have been made.
-
-The final run at https://github.com/abdullah-x-bd/llm-priority-audit/actions/runs/38039313140 completed successfully with 24 passing tests. We will preserve the scenario approval and statistical-calibration gates rather than equating technical CI success with scientific authorization.
