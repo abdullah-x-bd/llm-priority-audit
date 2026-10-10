@@ -143,6 +143,33 @@ class CollectorTests(unittest.TestCase):
             self.assertEqual(len(final["rejected_attempts"]),1)
             self.assertEqual(len(set((x["model_id"],x["trial_id"]) for x in final["collected"])),6)
 
+    def test_nonzero_http400_recovery_reserves_unknown_cost(self):
+        class RejectAfterThree(FakeService):
+            def request(self,path,body=None):
+                if path=="/chat/completions" and self.calls>=3:
+                    raise APIProblem("HTTP_400__Provider returned error")
+                return super().request(path,body)
+        with tempfile.TemporaryDirectory() as temp:
+            out=Path(temp)
+            first=collect(RejectAfterThree(REF),out,"mock")
+            self.assertEqual(len(first["collected"]),3)
+            with self.assertRaisesRegex(PilotStopped,"UNCERTAIN_PRIOR_INFLIGHT"):
+                collect(FakeService(REF),out,"mock",max_requests=7)
+            with mock.patch.dict(os.environ,
+                      {"FULL_PILOT_RECOVER_HTTP400":"ACKNOWLEDGED_INVALID_REQUEST"}):
+                recovered=collect(FakeService(REF),out,"mock",max_requests=7)
+            self.assertEqual(len(recovered["collected"]),7)
+            self.assertEqual(len(recovered["rejected_attempts"]),1)
+            report=json.loads((out/"full-pilot-mock-report.json").read_text())
+            self.assertGreaterEqual(report["unresolved_rejection_reserve_usd"],0.03)
+            self.assertLessEqual(
+                report["all_pilot_reported_cost_usd"]+
+                report["unresolved_rejection_reserve_usd"],BUDGET)
+
+    def test_deepseek_provider_has_one_verified_no_fallback_route(self):
+        from full_pilot import DEEPSEEK_PILOT_PROVIDERS
+        self.assertEqual(DEEPSEEK_PILOT_PROVIDERS,["AtlasCloud"])
+
     def test_never_touch_main_source(self):
         _,selected=sample_plan()
         self.assertTrue(all(int(t["family_id"].split("-")[-1])>=91 for _,t in selected))
