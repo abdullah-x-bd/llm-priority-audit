@@ -1,0 +1,67 @@
+name: V3.1 Recover Original Calibration and Conditional Main
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: v3-1-recovery-one-shot
+  cancel-in-progress: false
+jobs:
+  resume:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recover original immutable experiment records
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p results/private/v3_1-original
+          gh run download 38078421238 --repo abdullah-x-bd/llm-priority-audit --name v3_1-paid-calibration-38078421238 --dir results/private/v3_1-original
+          python scripts/v3_1_resume_study.py --mode audit
+      - name: Resume only missing calibration requests
+        id: calibration
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v3_1_resume_study.py --mode resume_calibration
+      - name: Save original and resumed calibration before possible main
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3_1-calibration-resume-${{ github.run_id }}
+          path: |
+            results/private/v3_1-original/
+            results/private/v3_1-single-shot/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Run full main only when original calibration gates and spend cap pass
+        if: steps.calibration.outputs.go == 'true'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v3_1_resume_study.py --mode resume_main
+      - name: Archive every experimental request and response
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3_1-study-recovery-${{ github.run_id }}
+          path: |
+            results/private/v3_1-original/
+            results/private/v3_1-single-shot/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Publish all results and missingness
+        if: always()
+        run: |
+          python scripts/v3_1_publish_results.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/44-v3_1-one-shot-results.md
+          git commit -m 'Publish V3.1 recovered calibration and conditional main outcome' || true
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
