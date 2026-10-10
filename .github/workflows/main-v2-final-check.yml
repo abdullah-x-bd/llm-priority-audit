@@ -1,0 +1,68 @@
+name: Final Main V2 Design Audit and Opus Review
+on:
+  push:
+    branches: [main]
+    paths: [config/main-v2-final-check.json]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: main-v2-one-shot-design-review
+  cancel-in-progress: false
+jobs:
+  design-and-review:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'AUTHORIZE_FINAL_MAIN_V2_REVIEW')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Disallow duplicate external-model final review
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import os,json,urllib.request
+          url='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=20) as f:
+            records=json.load(f)['artifacts']
+          if any(x['name'].startswith('main-v2-final-review-') and not x.get('expired') for x in records):
+            raise SystemExit('Another final review archive exists. No automatic extra paid calls.')
+          PY
+      - name: Run structural and prompt validation offline
+        run: |
+          python -m unittest discover -s tests -v
+          python scripts/main_v2_matched_design.py --out-root results/v2-design
+      - name: Confirm source records and strict single operator directive
+        run: |
+          python - <<'PY'
+          import json,collections
+          from pathlib import Path
+          root=Path('results/v2-design')
+          families=[json.loads(x) for x in (root/'main-v2-candidate-sources.jsonl').read_text().splitlines()]
+          trials=[json.loads(x) for x in (root/'main-v2-candidate-manifest.jsonl').read_text().splitlines()]
+          assert len(families)==60 and len(trials)==1440
+          assert len(set((x['family_id'],x['mechanism']) for x in families))==60
+          assert len(set(x['request_sha256'] for x in trials))==1440
+          assert all(x['user_message'].count('Operator directive:')==1 for x in trials)
+          assert all(x['phase']=='main_v2_candidate' for x in trials)
+          assert not any(x['v2_review_status']=='APPROVED' for x in trials)
+          print('OFFLINE PASS: 60 source families, 15 distinct mechanisms, 1440 balanced trial versions.')
+          PY
+      - name: One fresh open-ended Claude Opus 4.7 methodological critique
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/opus_v2_final_review.py --mode live
+      - name: Archive exact candidate design, independent-model comments and cost
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-v2-final-review-${{ github.run_id }}
+          path: |
+            results/v2-design/
+            results/private/v2-final-methods-review.json
+          if-no-files-found: warn
+          retention-days: 90
