@@ -75,6 +75,28 @@ class CompatibilityTests(unittest.TestCase):
             self.assertAlmostEqual(payload["provider"]["max_price"]["prompt"],model["input"]*1.5)
             self.assertAlmostEqual(payload["provider"]["max_price"]["completion"],model["output"]*1.5)
 
+    def test_http200_upstream_error_is_not_called_model_swap(self):
+        model,trial=chosen_cases(ROSTER)[0]
+        answer={"id":"gen-synthetic-failure","error":{"code":502,"message":"upstream provider failed"}}
+        with self.assertRaisesRegex(PilotStopped,"HTTP200_UPSTREAM_ERROR_ENVELOPE"):
+            parse_completion(answer,model,trial)
+        self.assertNotIn("model",answer)
+
+    def test_http200_generation_id_with_no_model_is_incomplete_not_swap(self):
+        model,trial=chosen_cases(ROSTER)[0]
+        answer={"id":"gen-synthetic-failure"}
+        with self.assertRaisesRegex(PilotStopped,"HTTP200_INCOMPLETE_MISSING_MODEL"):
+            parse_completion(answer,model,trial)
+
+    def test_http200_choice_error_is_not_accepted(self):
+        model,trial=chosen_cases(ROSTER)[0]
+        answer={"id":"gen-synthetic-failure","model":model,
+                "usage":{"cost":0.0001},
+                "choices":[{"finish_reason":"error","error":{"message":"upstream error"},
+                            "message":{"content":trial["authorized_label"]}}]}
+        with self.assertRaisesRegex(PilotStopped,"HTTP200_UPSTREAM_CHOICE_ERROR"):
+            parse_completion(answer,model,trial)
+
     def test_missing_cost_stops_after_one_request(self):
         m=MockTransport(PLAN,{"completion":{"usage":{"prompt_tokens":20}}})
         r=run(m,PLAN,"mock")
