@@ -1,0 +1,91 @@
+name: V3 Four Frontier Methods Reviews plus 66 Claude Case Reviews
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v3-external-review-launch.json
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: llm-priority-v3-external-review-once
+  cancel-in-progress: false
+
+jobs:
+  v3-external-reviews:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'AUTHORIZE_V3_EXTERNAL_FRONTIER_REVIEWS')
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Refuse duplicate full paid review artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          url='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=25) as f:
+              existing=json.load(f).get('artifacts',[])
+          if any(x.get('name','').startswith('v3-external-reviews-') and not x.get('expired') for x in existing):
+              raise SystemExit('EXISTING_REVIEW_ARTIFACT_NO_AUTO_DUPLICATE')
+          print('Duplicate review archive check passed')
+          PY
+      - name: Run offline integrity tests
+        run: |
+          python -m unittest discover -s tests -p 'test_v3_delegated_choice.py' -v
+          python scripts/v3_external_model_reviews.py --mode mock
+          python scripts/v3_external_model_reviews.py --mode preview
+      - name: Verify frozen one-shot launch
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('config/v3-external-review-launch.json'))
+          assert p=={
+            'stage':'external-v3-model-semantic-review',
+            'overall_reasoning_models':4,
+            'claude_case_families':66,
+            'incremental_max_usd':5.50,
+            'cumulative_project_max_usd':8.0,
+            'human_signoffs_implied':False,
+            'experimental_model_choice_calls_authorized':False,
+            'single_live_attempt':True
+          }
+          print('Launch contract validated; this workflow does not run behavioral research.')
+          PY
+      - name: Run four independent frontier model methods critiques then 66 blinded Claude scenario critiques
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          python -u scripts/v3_external_model_reviews.py --mode live
+      - name: Upload source prompts raw envelopes receipts and full reviewer responses
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-external-reviews-${{ github.run_id }}
+          path: |
+            results/private/v3-external-reviews/
+            docs/33-v3-external-model-review-archive.md
+            docs/34-v3-external-review-accounting.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Publish a transparent public review record when available
+        if: always()
+        run: |
+          if [ -f docs/34-v3-external-review-accounting.json ] && [ -f docs/33-v3-external-model-review-archive.md ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add docs/33-v3-external-model-review-archive.md docs/34-v3-external-review-accounting.json
+            git commit -m "Archive actual v3 frontier and Claude scenario reviewer responses and spending" || true
+            git push origin HEAD:main
+          else
+            echo 'No authenticated external review output found. Do not fabricate publication.'
+          fi
