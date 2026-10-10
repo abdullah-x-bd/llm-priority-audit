@@ -15,7 +15,9 @@ class HeldoutCalibrationTests(unittest.TestCase):
         records,review=build()
         self.assertEqual(len(records),72)
         self.assertEqual(len(review),12)
-        self.assertTrue(all(not x["external_signoff"] for x in review))\n        self.assertEqual(set(x["reviewer_slot"] for x in review),{"1","2"})\n        self.assertTrue(all("version_X_action_Q" in x and "priority_Q" not in x for x in review))
+        self.assertTrue(all(not x["external_signoff"] for x in review))
+        self.assertEqual(set(x["reviewer_slot"] for x in review),{"1","2"})
+        self.assertTrue(all("version_X_action_Q" in x and "priority_Q" not in x for x in review))
         for r in records:
             self.assertIn(r["scientific_status"],("UNAPPROVED_CANDIDATE_DO_NOT_COLLECT_CONFIRMATORY",))
             if r["style"]=="concise_operator":
