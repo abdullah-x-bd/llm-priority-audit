@@ -1,0 +1,52 @@
+name: V3.1 Surgical Economic Redesign Offline Audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/v3_1_economic_design.py'
+      - 'data/v3_1/context_inventory.jsonl'
+      - 'tests/test_v3_1_economic_design.py'
+      - 'docs/39-v3_1-surgical-economic-protocol.md'
+      - '.github/workflows/v3_1-offline-redesign.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v3_1-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run versioned V3.1 economic design integrity tests
+        run: python -m unittest discover -s tests -p 'test_v3_1_economic_design.py' -v
+      - name: Generate main and calibration manifests with no inference
+        run: python scripts/v3_1_economic_design.py --phase both --out-dir /tmp/v3_1-offline
+      - name: Check exact manifest counts and zero authorizations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('/tmp/v3_1-offline')
+          for phase,contexts,choice,arithmetic,paired,slots in [
+             ('main',60,1680,0,480,120),
+             ('calibration',6,168,120,48,12)
+          ]:
+              r=json.loads((p/f'v3_1-{phase}-audit.json').read_text())
+              assert r['contexts']==contexts and r['delegated_templates_per_model']==choice
+              assert r['arithmetic_control_templates_per_model']==arithmetic
+              assert r['presentation_order_paired_cases_per_model']==paired
+              assert r['blank_human_review_slots']==slots
+              assert r['signed_human_reviews']==0 and r['authorized_paid_calls']==0
+          print('All V3.1 offline checks pass; zero provider calls.')
+          PY
+      - name: Preserve sample prompts and blank review packets
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3_1-offline-unapproved-${{ github.run_id }}
+          path: /tmp/v3_1-offline/
+          retention-days: 30
