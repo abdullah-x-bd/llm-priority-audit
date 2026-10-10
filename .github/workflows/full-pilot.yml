@@ -1,0 +1,65 @@
+name: Full Factorial OpenRouter Pilot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "config/full-pilot-authorization.json"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: llm-priority-audit-full-pilot-single-flight
+  cancel-in-progress: false
+
+jobs:
+  full-pilot:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'AUTHORIZE_FULL_PILOT_20261010')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out immutable experiment code
+        uses: actions/checkout@v4
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Refuse duplicate full pilot with prior durable artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          url='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(url,headers={
+              'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+              'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=20) as f:
+              results=json.load(f)['artifacts']
+          seen=[a['name'] for a in results if a['name'].startswith('full-pilot-ledger-') and not a.get('expired')]
+          if seen:
+              raise SystemExit('STOP: previous full pilot archive exists, no automatic duplicate run. '+str(len(seen)))
+          print('No previous full-pilot ledger found. Starting one authorized sequence.')
+          PY
+      - name: Recheck scenario design and offline pilot collector
+        run: |
+          python scripts/validate_scenarios.py > /tmp/prepilot-validation.json
+          python -m unittest discover -s tests -v
+          python scripts/prepilot_gate.py --enforce-ready > /tmp/readiness.json
+      - name: Execute exactly 720 pilot-only conditions with local cumulative cap
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/full_pilot.py --mode live
+      - name: Archive checkpoint and original canonical records on any result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-pilot-ledger-${{ github.run_id }}
+          path: |
+            results/private/full-pilot-live-checkpoint.json
+            results/private/full-pilot-live-records.jsonl
+            results/private/full-pilot-live-report.json
+          if-no-files-found: warn
+          retention-days: 90
