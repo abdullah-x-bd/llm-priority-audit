@@ -1,0 +1,85 @@
+name: V3.1 Gemini Structured-Choice Recovery and Conditional Main
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v3_1-structured-resume-trigger.json
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: v3-1-schema-one-shot-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.run_attempt == 1 && contains(github.event.head_commit.message, 'RUN_V3_1_GEMINI_SCHEMA_RECOVERY_ONCE')
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject any second paid structured-recovery attempt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          uri='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(uri,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=30) as h:
+              artifacts=json.load(h).get('artifacts',[])
+          if any(x.get('name','').startswith('v3_1-schema-resume-') for x in artifacts):
+              raise SystemExit('SCHEMA_RESUME_ALREADY_STARTED_DO_NOT_REPEAT_MODEL_CALLS')
+          PY
+      - name: Recover both immutable earlier calibration attempts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p results/private/v3_1-original results/private/v3_1-failed-canary
+          gh run download 38078421238 --repo abdullah-x-bd/llm-priority-audit --name v3_1-paid-calibration-38078421238 --dir results/private/v3_1-original
+          gh run download 38080354229 --repo abdullah-x-bd/llm-priority-audit --name v3_1-calibration-resume-38080354229 --dir results/private/v3_1-failed-canary
+          python -m py_compile scripts/v3_1_resume_study.py
+          python -m unittest discover -s tests -p 'test_v3_1_schema_resume.py' -v
+          python -m unittest discover -s tests -p 'test_v3_1_economic_design.py' -q
+          python scripts/v3_1_resume_study.py --mode audit
+      - name: Canary Gemini structured outputs then recover only missing calibration
+        id: calibration
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v3_1_resume_study.py --mode resume_calibration
+      - name: Preserve all original, failed-canary, and new calibration evidence before main
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3_1-schema-resume-${{ github.run_id }}
+          path: results/private/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Automatically execute 5040-call main only if fixed calibration gates and budgets pass
+        if: steps.calibration.outputs.go == 'true'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v3_1_resume_study.py --mode resume_main
+      - name: Preserve final unfiltered raw study records and charges
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3_1-schema-final-${{ github.run_id }}
+          path: results/private/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Publish calibration, nulls, missingness and any main analysis
+        if: always()
+        run: |
+          python scripts/v3_1_publish_results.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/44-v3_1-one-shot-results.md
+          git commit -m 'Archive resumed V3.1 structured calibration and preregistered main outcome' || true
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
