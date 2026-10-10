@@ -1,0 +1,57 @@
+name: V3.1 One Shot Status Probe (No Inference)
+on:
+  push:
+    branches: [main]
+    paths: [config/v3_1-probe-request.json]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  inspect:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Read current study run status from GitHub Actions without model calls
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          from pathlib import Path
+          base='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']
+          def get(path):
+              req=urllib.request.Request(base+path,headers={
+                  'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+                  'Accept':'application/vnd.github+json',
+                  'User-Agent':'v3-1-status-probe'})
+              with urllib.request.urlopen(req,timeout=30) as r:return json.load(r)
+          runs=get('/actions/workflows/v3_1-one-shot-study.yml/runs?per_page=8')['workflow_runs']
+          out=['# V3.1 live one-shot launch status (read only)','',
+              'No OpenRouter calls in this status probe.','']
+          for r in runs[:3]:
+              out+=['## Run '+str(r['id'])+'  '+str(r['status'])+'  '+str(r.get('conclusion')),
+                    r['html_url'],'',
+                    'Trigger commit: '+str(r['head_sha']),'']
+              jobs=get('/actions/runs/'+str(r['id'])+'/jobs?per_page=20')['jobs']
+              for j in jobs:
+                  out+=['Job '+str(j.get('name'))+' '+str(j.get('conclusion'))+' / '+str(j.get('status'))]
+                  for step in j.get('steps',[]):
+                      out+=['- '+str(step.get('name'))+': '+str(step.get('conclusion') or step.get('status'))]
+                  out+=['']
+          if not runs:out+=['No matching runs found.']
+          Path('docs/45-v3_1-one-shot-launch-status.md').write_text('\n'.join(out)+'\n')
+          print('\n'.join(out))
+          PY
+      - name: Save read-only status snapshot
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/45-v3_1-one-shot-launch-status.md
+          git commit -m 'Snapshot one-shot V3.1 live GitHub Actions status without model calls' || true
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
