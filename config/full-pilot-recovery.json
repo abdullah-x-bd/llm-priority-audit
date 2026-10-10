@@ -1,0 +1,8 @@
+{
+  "source_run_id": 38044782454,
+  "failed_status": "HTTP_400",
+  "prior_collected": 0,
+  "previous_reported_cost_usd": 0,
+  "acknowledged_retry": true,
+  "overall_pilot_cap_usd": 0.75
+}
