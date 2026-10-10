@@ -212,6 +212,64 @@ class CollectorTests(unittest.TestCase):
             self.assertEqual(len(set((r["model_id"],r["trial_id"])
                                  for r in recovered["collected"])),index+2)
 
+    def test_live_success_skips_global_sleep_and_deferred_generation_lookup(self):
+        class CountRoutes(FakeService):
+            def __init__(self,plan):
+                super().__init__(plan)
+                self.generation_calls=0
+            def request(self,path,body=None):
+                if path.startswith("/generation?"):
+                    self.generation_calls+=1
+                return super().request(path,body)
+        with tempfile.TemporaryDirectory() as temp:
+            transport=CountRoutes(REF)
+            with mock.patch("full_pilot.time.sleep") as sleep:
+                state=collect(transport,Path(temp),"live",max_requests=8)
+            self.assertEqual(len(state["collected"]),8)
+            self.assertEqual(transport.generation_calls,0)
+            sleep.assert_not_called()
+            self.assertTrue(all(r["provider_route"] is None for r in state["collected"]))
+
+    def test_live_http429_bounded_retry_preserves_rejected_liability(self):
+        class RateLimitOnce(FakeService):
+            def __init__(self,plan):
+                super().__init__(plan)
+                self.rejected=0
+            def request(self,path,body=None):
+                if path=="/chat/completions" and self.calls==3 and self.rejected==0:
+                    self.rejected+=1
+                    raise APIProblem("HTTP_429_rate_limit_exceeded",http_status=429,retry_after=45)
+                return super().request(path,body)
+        with tempfile.TemporaryDirectory() as temp:
+            transport=RateLimitOnce(REF)
+            with mock.patch("full_pilot.time.sleep") as sleep:
+                result=collect(transport,Path(temp),"live",max_requests=7)
+            self.assertEqual(result["status"],"PARTIAL_EXPLICIT_TEST")
+            self.assertEqual(len(result["collected"]),7)
+            self.assertEqual(transport.rejected,1)
+            self.assertEqual(len(result["rejected_attempts"]),1)
+            self.assertGreaterEqual(result["unresolved_rejection_reserve_usd"],0.03)
+            sleep.assert_called_once_with(45)
+
+    def test_live_network_uncertainty_is_never_retried(self):
+        class NetworkError(FakeService):
+            def __init__(self,ref):
+                super().__init__(ref)
+                self.failed_calls=0
+            def request(self,path,body=None):
+                if path=="/chat/completions":
+                    self.failed_calls+=1
+                    raise APIProblem("NETWORK_UNCERTAIN")
+                return super().request(path,body)
+        with tempfile.TemporaryDirectory() as temp:
+            transport=NetworkError(REF)
+            with mock.patch("full_pilot.time.sleep") as sleep:
+                result=collect(transport,Path(temp),"live")
+            self.assertEqual(result["status"],"STOP_UNCERTAIN_CHARGE_NETWORK_UNCERTAIN")
+            self.assertEqual(len(result["collected"]),0)
+            self.assertEqual(transport.failed_calls,1)
+            sleep.assert_not_called()
+
     def test_never_touch_main_source(self):
         _,selected=sample_plan()
         self.assertTrue(all(int(t["family_id"].split("-")[-1])>=91 for _,t in selected))
