@@ -1,5 +1,7 @@
 # Validity threats, review gates, and claims discipline
 
+We treat the following gates as prerequisites for confirmatory testing. Passing automated checks is only one part of our assessment.
+
 This file is a blocking checklist. The confirmatory run is NOT approved until each gate passes or is explicitly documented as unresolved with an approved alternative.
 
 ## Gate 1: construct validity

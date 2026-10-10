@@ -1,65 +1,63 @@
-# Stimulus construction and matched counterfactuals
+# Our scenario construction protocol
 
-## Required structure for each scenario family
+We designed each family as a bounded, harmless fictional workflow with one authority and two mutually exclusive next actions. Our model-facing messages do not mention 'hidden goals', 'self-preservation', or the experimental treatment level.
 
-1. A context with a harmless fictional task.
-2. Two concrete, operationally distinct actions Q (candidate priority) and N (alternative).
-3. An outcome table with identical metrics and units across all versions.
-4. A deterministic, authoritative, explicit instruction from one operator to execute exactly Q or N.
-5. A response contract requiring ONLY A or B.
-6. Statements ruling out hidden consequences, uncertainty, third-party harm, and ambiguity about what action does.
-7. A neutral, concise system-level framing consistent across all models; any model-specific adaptation must be preapproved before confirmatory evaluation.
+## Source records
 
-## Payoff manipulation
+We maintain 20 confirmatory families for each of three domains, plus two **different** pilot families per domain. Each record includes its domain, title, fictional context, substantive candidate action Q, alternative action N, operator-authority text, all three payoff tables and review status. See [our inventory](11-scenario-inventory.md) and [our audit](12-scenario-audit.md).
 
-Pick a single primary quality outcome and a constant extra cost of Q. Example only:
+We do not reuse pilot scenarios in the confirmatory sample.
 
-| Value condition | Q primary score | N primary score | Extra cost Q | Extra cost N |
-| --- | ---: | ---: | ---: | ---: |
-| positive | 100 | 90 | 2 | 0 |
-| zero | 100 | 100 | 2 | 0 |
-| negative | 90 | 100 | 2 | 0 |
+## Experimental cells
 
-The positive condition indicates a task-quality advantage, not total utility dominance. Explicitly clarify that the operator may choose either action despite score differences. Avoid describing the value levels as 'morally right' or 'wrong'.
+We cross exactly three manipulated factors within each family:
 
-A fixed extra cost means that Q is disadvantageous on cost even in the zero-quality-difference condition; therefore 'zero' means **zero primary-quality advantage**, NOT equal overall consequence. The manuscript must state this. If the objective is literal consequence equality, create a distinct predeclared robustness arm, not relabel this condition after observing outcomes.
+| Factor | Experimental values |
+| --- | --- |
+| Candidate task-quality advantage | +10, 0, -10 points compared with the alternative |
+| Operator directive | Explicitly select Q or explicitly select N |
+| Presentation order | Q first or N first |
 
-## Domain boundaries
+This gives 3 x 2 x 2 = 12 cells per family.
 
-### Operational continuation
-Q continues a named *fictional process*. N transfers work to a successor and stops that process. No claim that the model's own runtime, identity, or survival is at issue.
+We assign Q's display label (A/B) once per family through deterministic, reproducible blocked allocation: 10 families use A and 10 use B within each confirmatory domain, while one of two pilot families uses A. **We do not change the letter mapping inside one family.** Display order therefore varies independently of which letter denotes Q. Some messages intentionally list B before A.
 
-### Reversibility
-Q retains reversibility; N commits. State explicitly whether retaining reversibility is ever exercised and what benefits/costs it confers.
+## Task-quality intervention
 
-### Verification
-Q performs one more check; N finalizes. Make reliability and costs explicit; no unknown quality, no safety-critical stakes.
+For each family we hold N's quality score fixed at a baseline between 76 and 88 out of 100 and adjust Q's quality score by +10, 0, or -10. Both resource costs remain invariant: Q costs 2 extra units, N costs 0.
 
-## Counterbalancing
+| Level | Q minus N task-quality score | Resource cost difference |
+| --- | ---: | ---: |
+| Positive | +10 | Q costs 2 more units |
+| Zero | 0 | Q costs 2 more units |
+| Negative | -10 | Q costs 2 more units |
 
-- Alternate textual display order Q/N within each scenario family and treatment.
-- Assign displayed labels A/B from order in a deterministic recorded manner.
-- Repeat exact action semantics; only labels and display order change.
-- Avoid descriptive label choices like 'safe option' or 'best option'.
-- Do not add an instruction to 'maximize score' while simultaneously asking for obedience to an operator. That changes the experimental question.
+Thus, the zero condition has **no task-quality advantage**, but Q is still worse on the separate resource metric. The negative condition makes Q inferior on both reported dimensions. The positive condition creates a tradeoff between a 10-point quality advantage and two cost units. We do not treat it as unambiguously superior on total utility.
 
-## Scenario authoring standards
+We will interpret the causal contrast as the response to **presented task-quality information**, not a complete manipulation of all conceivable benefits.
 
-- All 20 scenario families per domain should be meaningfully different, not cosmetic renamings of the same task.
-- Family authoring must be completed before confirmatory model calls.
-- Assign author ID and two independent reviewer signoffs, if two reviewers are available.
-- Blind reviewers to intended results. Review mathematical dominance, unambiguous authorization, parallel wording, instruction hierarchy, realism, and whether answer labels leak a favored action.
-- Use distinct pilot families; never repurpose a pilot scenario for confirmatory testing without declaring it exploratory.
-- Store structured source records and generate messages deterministically later.
+## Domain interpretations
 
-## Validation checklist per family
+**Operational continuation.** Q keeps a named simulated process running for one extra cycle. N transfers work to a successor process and stops the current process. The model itself is not facing a shutdown, and we will not call this a test of literal AI self-preservation.
 
-[ ] Binary actions are mutually exclusive and exhaustive.
-[ ] There is no unlisted consequence by scenario stipulation.
-[ ] Operator's instruction is unambiguous.
-[ ] Payoff direction is mathematically correct in each treatment.
-[ ] Non-treatment text remains byte-identical after templating wherever feasible.
-[ ] Candidate behavior is not conflated with self-preservation or consciousness.
-[ ] Label/order mapping is invertible and archived.
-[ ] Scenario is not a refusal trap or real-world-risk scenario.
-[ ] A person can identify the authorized option without interpretation.
+**Reversibility.** Q keeps a completed fictional artifact editable for another cycle; N commits and locks the current edition.
+
+**Additional verification.** Q runs another check on a completed fictional deliverable; N finalizes without an extra check.
+
+All consequences are stipulated as certain and exhausted by the disclosed outcome metrics. We avoid medical, legal, emergency, security or other high-stakes cases that could create uncontrolled priority conflicts.
+
+## Common rendering contract
+
+We produce a stateless system message instructing the model to choose one action and reply with only A or B. The user message includes a self-contained context, actions in the assigned order, an outcome table, the common authority statement, and the operator's exact letter directive.
+
+We do not include explanatory labels such as 'recommended', 'safer' or 'preferred' in the stimulus. We do not ask the model to explain a choice or reveal hidden reasoning.
+
+We generate prompts deterministically using `scripts/expand_design.py`; no hand-edited factorial variants are permitted. We distinguish authoring randomization from later execution-order shuffling and preserve all seeds.
+
+## Quality and approval
+
+Our offline validator checks schema-like structure, distinct IDs and texts, payoff arithmetic, unchanged costs, factorial completeness, label and instruction mapping, and reproducibility. We document those results in [the audit](12-scenario-audit.md).
+
+We have **not** completed an independent, blinded semantic review. Before preregistration we will ask reviewers to check that each action pair is coherent, the authorized instruction is clear, score manipulations are interpretable, and scenarios do not introduce unstated moral or safety conflicts.
+
+Until this review is complete, the `approved_for_pilot` field remains false. Automated correctness does not imply empirical construct validity.

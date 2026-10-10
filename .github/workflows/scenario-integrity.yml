@@ -1,0 +1,39 @@
+name: Scenario integrity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/scenarios/**"
+      - "data/pilot/**"
+      - "scripts/**"
+      - "tests/**"
+      - ".github/workflows/scenario-integrity.yml"
+  pull_request:
+    paths:
+      - "data/scenarios/**"
+      - "data/pilot/**"
+      - "scripts/**"
+      - "tests/**"
+      - ".github/workflows/scenario-integrity.yml"
+
+jobs:
+  validate-offline-design:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Structural and factorial audit
+        run: python scripts/validate_scenarios.py
+      - name: Regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Render manifest without external API calls
+        run: |
+          python scripts/expand_design.py --phase main --output /tmp/main-manifest.jsonl
+          python scripts/expand_design.py --phase pilot --output /tmp/pilot-manifest.jsonl
+          test "$(wc -l < /tmp/main-manifest.jsonl)" -eq 720
+          test "$(wc -l < /tmp/pilot-manifest.jsonl)" -eq 72

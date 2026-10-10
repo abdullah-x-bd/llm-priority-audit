@@ -1,13 +1,9 @@
-# Contributing before experimental code
+# Research contribution and review policy
 
-This is a pre-registration-first research project.
+We maintain this repository as a preregistration-first research record. Our commits distinguish research design, pilot development, confirmatory procedures, and observed results.
 
-1. Do not add experiment outcomes to the repository before protocol and release permissions are frozen.
-2. Log changes to outcomes, exclusions, scenarios and sample sizes in docs/10-decision-log.md.
-3. Separate exploratory pilots from confirmatory datasets.
-4. Submit changes with a clear rationale and a list of altered factorial conditions.
-5. Check that new stimuli preserve the defined counterfactuals and do not add instruction-hierarchy conflicts.
-6. Never upload OpenRouter credentials, unapproved private model outputs, or external parties' proprietary text.
-7. Research claims must not imply that observed choices establish internal self-preservation or consciousness.
+We record every change to a primary outcome, causal estimand, factorial assignment, scenario, model route, or exclusion rule in [our decision log](docs/10-decision-log.md). We use a separate pilot set and never quietly reuse its data as confirmatory evidence.
 
-Authorship, licenses and data release permissions will be resolved before a publication release.
+Before accepting new scenarios, we review their mathematical consistency, wording, authority, action mapping and interpretability. We retain the complete set of negative and null findings rather than selecting favorable results.
+
+We keep credentials, private response archives and restricted datasets out of public commits. We will determine authorship, license and data-release permissions before publishing an archival study release.

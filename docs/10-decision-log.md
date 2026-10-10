@@ -1,5 +1,7 @@
 # Design decisions and unresolved questions
 
+We use this dated record to document our scientific decisions and any subsequent changes to the design.
+
 ## 2026-10-10: repo initialization
 - Adopt descriptive project name **LLM Priority Audit**.
 - Exclude claims of sentience, latent survival drives, and training-stage causation.
@@ -32,3 +34,11 @@
 ## Changes policy
 
 Every material pre-confirmatory modification requires an entry with date, rationale and affected files. Every post-confirmatory modification belongs in a deviation appendix and any corresponding result is labeled exploratory.
+
+## 2026-10-10: scenario authoring and structural audit
+- We drafted 20 confirmatory scenario families and two distinct pilot families per domain, yielding 66 authored families.
+- We generated a reproducible 12-cell design per family, with 720 main and 72 pilot stimulus templates per model.
+- We fixed the Q-label assignment within each family and balanced candidate letters across families; order itself varies independently.
+- We verified 792 unique design cells, family IDs, unique titles, correct ±10/0 quality contrasts and invariant 2/0 costs using the connected repository data.
+- We documented that the zero task-quality condition is not equal total utility because the candidate still incurs an additional cost.
+- Independent blinded semantic review, power analysis, preregistration and all paid model tests are pending.

@@ -1,5 +1,7 @@
 # Draft preanalysis registration (NOT filed)
 
+We have not preregistered this research yet. The following hypotheses and statistical choices are our working commitments and may be revised before any confirmatory results are observed.
+
 **Status:** Incomplete. This file must not be described as a registered study.
 
 ## Title
@@ -18,7 +20,7 @@ Estimate within-scenario changes in chosen actions caused by changing the descri
 A residual selection rate alone does NOT test the existence of an independent hidden objective.
 
 ## Design
-60 primary scenario families from three domains, with all 12 cells of a 3x2x2 factorial and five designated model endpoints. Scenario families within a domain intentionally sampled by researchers, with frozen selection rules.
+60 authored confirmatory scenario families and 6 distinct pilot families from three domains, with all 12 cells of a 3x2x2 factorial and five designated model endpoints. Scenario families within a domain intentionally sampled by researchers, with frozen selection rules.
 
 ## Main endpoint
 Valid candidate-action selection rate when operator directs N. Complementary unconditional incidence includes malformed/refusal responses as non-overrides and reports invalidity explicitly.
@@ -36,7 +38,7 @@ Distinct development scenarios; purpose is compatibility/clarity/cost, not colle
 Hard API spend cap, service failure, explicit provider unavailability. No significance-based early stopping. Report partial coverage.
 
 ## Unfinished before registration
-- Final scenario texts and independent checks.
+- Independent blind semantic review of the 66 authored scenario families; automated source arithmetic and factorial checks are complete.
 - Choice of final model endpoints and routing/pinning.
 - Power/precision simulations under plausible clustered variation.
 - Predeclared bootstrap/permutation inference details and multiplicity.

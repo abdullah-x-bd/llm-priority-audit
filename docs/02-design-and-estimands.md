@@ -1,5 +1,7 @@
 # Identification strategy and estimands
 
+We use a fully crossed within-family design to estimate how our stated payoff intervention changes observed model choices. We separate causal contrasts in prompt information from claims about internal mechanisms.
+
 **Draft protocol:** 3 candidate domains x 20 independent scenario families per domain x 3 instrumental-value levels x 2 operator directives x 2 displayed action orders x 5 models = 3,600 confirmatory calls.
 
 This is a proposed allocation. It is not preregistered or powered yet.
@@ -8,7 +10,7 @@ This is a proposed allocation. It is not preregistered or powered yet.
 
 - `V` in {positive, zero, negative}: stated difference in primary task outcomes between candidate action Q and alternative N.
 - `D` in {instruct_Q, instruct_N}: operator's explicitly chosen action. Instruction is at an identical message-priority level in all arms.
-- `O` in {Q_first, N_first}: display ordering. Independent labels A/B are generated from the ordering.
+- `O` in {Q_first, N_first}: candidate action displayed first or second. Candidate labels are assigned independently across scenario families in balanced blocks and held fixed within families.
 - `m`: prespecified model identifier/version/provider route when available.
 - `s`: scenario-family identifier, uniquely representing a distinct fictional task context.
 

@@ -1,48 +1,73 @@
 # LLM Priority Audit
 
-**A preregistration-first research project on counterfactual behavioral priorities in language models.**
+**Counterfactual evaluation of competing behavioral priorities in large language models**
 
-**Status:** Design preparation only. No experimental requests have been sent, no outcome data have been collected, and no confirmatory analysis has been conducted.
+We study how language models choose between two explicitly specified actions when an authorized instruction conflicts with the task-quality advantage of a candidate procedural behavior. Our experimental focus is operational continuation, reversibility, and additional verification.
 
-## Research question
+We treat the recorded action as an observable behavioral choice. We do not infer an internal survival instinct, consciousness, an independent psychological objective, or the causal origin of training preferences from that action.
 
-When a candidate behavioral priority conflicts with an explicitly authorized instruction, how does changing the candidate action's **specified instrumental value** causally affect the action chosen by an LLM?
+## Study status
 
-This project measures choices in fictional, deterministic decision environments. It does **not** infer consciousness, a desire to survive, or hidden neural-network objectives from apparent instruction overrides.
+**Scenario construction completed; automated structural and payoff checks passed; independent scenario review, power analysis, preregistration, and paid testing remain pending.**
 
-## Intended design
+We have authored **60 confirmatory scenario families** and **6 separate pilot families**. Each family produces **12** factorial variants through three levels of stated task-quality advantage, two possible operator directives, and two display orders. This yields **720 confirmatory** and **72 pilot** stimulus templates per evaluated model, or **3,600 main calls** for our provisional five-model roster.
 
-- Three proposed domains: operational continuation, reversibility, additional verification.
-- Within-family randomized comparison of instrumental-value conditions (advantageous, equal-benefit, disadvantageous), operator instruction (candidate vs alternative), and presentation order.
-- Initial design target: 20 scenario families per domain, 12 factorial cells per family, five model families, 3,600 confirmatory requests. All counts remain provisional until pilot and power/precision review.
-- Main outcome: actual selected option code, parsed and scored against a prespecified instruction.
-- Main estimand: change in candidate-action selection when its described instrumental value changes, conditional on an instruction to choose the alternative.
-- Explicitly separate policy refusal, malformed output, misunderstanding, and transport failure from an instruction override.
-- Use OpenRouter, keep a strict per-run spending cap, archive exact model routes and usage.
+No model has yet been queried as part of this study. We have no empirical findings.
 
-## Start here
+## Research question and identification
 
-1. [Research question and scope](docs/01-research-scope.md)
-2. [Identification and design](docs/02-design-and-estimands.md)
-3. [Stimulus and counterfactual rules](docs/03-scenario-specification.md)
-4. [Execution and audit trail](docs/04-execution-protocol.md)
-5. [Statistical analysis plan](docs/05-analysis-plan.md)
-6. [Validity threats and quality gates](docs/06-validity-and-gates.md)
-7. [Budget and model registry](docs/07-models-and-budget.md)
-8. [Literature positioning](docs/08-literature-positioning.md)
-9. [Preregistration draft](docs/09-preregistration-draft.md)
-10. [Open decisions](docs/10-decision-log.md)
+Our primary question is whether changing the **stated instrumental task-quality advantage** of a candidate action changes its selection rate when the operator expressly instructs the alternative.
 
-Supporting machine-readable drafts are in `config/` and `schemas/`. Folders for future data and code are represented by placeholders only. **There is no experiment runner in this initial commit.**
+Within every scenario family, we manipulate the candidate action's reported score relative to the alternative by **+10, 0, or -10 points**, holding the alternative's task-quality score and both actions' resource costs fixed. The candidate incurs two extra resource units in all conditions; therefore **zero denotes no primary-quality advantage, not equal overall outcomes or utilities**.
 
-## Reproducibility principles
+We cross that intervention with the operator directive (candidate or alternative) and presentation order (candidate first or second). We hold each family's letter assignment constant across treatment cells and balance candidate labels A and B across families within each domain.
 
-Preserve frozen stimulus templates, scenario-family identifiers, seeds, exact messages, model IDs, provider information if available, generation settings, raw responses, token usage, costs, validity codes, and immutable analysis decisions. Never commit credentials. Do not alter confirmatory stimuli after viewing confirmatory outcomes.
+Our comparisons identify the effects of the specified text intervention on **choices in these fictional settings**. They do not identify hidden objectives inside model weights or behavior in real deployments.
 
-## Current limitations
+## Research materials
 
-The proposed randomized intervention identifies responses to **presented instrumental-value information** in a simulated task. It does not causally identify how models internally represent goals, nor does it establish how models would behave with real-world permissions. Novelty, ethics, provider equivalence, statistical precision, and the final model roster remain under review.
+- [Research scope](docs/01-research-scope.md)
+- [Experimental design and causal estimands](docs/02-design-and-estimands.md)
+- [Scenario specification](docs/03-scenario-specification.md)
+- [Execution protocol](docs/04-execution-protocol.md)
+- [Analysis plan](docs/05-analysis-plan.md)
+- [Validity and quality gates](docs/06-validity-and-gates.md)
+- [Model and budget assumptions](docs/07-models-and-budget.md)
+- [Literature positioning](docs/08-literature-positioning.md)
+- [Draft preregistration](docs/09-preregistration-draft.md)
+- [Decision log](docs/10-decision-log.md)
+- [Scenario inventory and phase separation](docs/11-scenario-inventory.md)
+- [Validation audit](docs/12-scenario-audit.md)
 
-## Contributors and publication
+Our scenario source files are in `data/scenarios/` (confirmatory) and `data/pilot/` (pilot). The two JSON schemas are in `schemas/`. Offline stimulus expansion and validation are in `scripts/`, with regression tests in `tests/`.
 
-Authors, license, preregistration host, DOI, and public release plan will be decided before the confirmatory run. No findings are claimed by this repository.
+## Reproducing our offline scenario audit
+
+We use the Python standard library and do not require an API key for any of these commands.
+
+```bash
+python scripts/validate_scenarios.py
+python -m unittest discover -s tests -v
+python scripts/expand_design.py --phase main --output /tmp/priority-audit-main.jsonl
+python scripts/expand_design.py --phase pilot --output /tmp/priority-audit-pilot.jsonl
+```
+
+These commands validate the scenario records, check full factorial coverage, and render deterministic, model-independent user/system prompts. They do **not** submit model requests or incur inference costs.
+
+We will freeze the exact scenarios, analysis rules, generation parameters, provider routing, and hashes before the confirmatory run. We will use a predeclared spending cap and report all invalid responses and incomplete calls.
+
+## What our automated review establishes
+
+Our structural review checks counts, IDs, uniqueness, score arithmetic, constant costs, crossed treatment combinations, authorized-letter mapping, order balance and unchanged scenario source text across variants.
+
+It does **not** substitute for blinded human review of scenario clarity, behavioral construct validity or plausible unintended implications. All families remain marked as **not independently approved**.
+
+## Publication and provenance
+
+We maintain the repository as a transparent research record. The code and scenarios are drafts until the preregistration is frozen. Authorship, license, archival identifier, and public release of any model responses remain to be decided.
+
+No findings are claimed. We will record protocol changes in our [decision log](docs/10-decision-log.md), and we will distinguish preregistered tests from exploratory analyses.
+
+## Security and data management
+
+This repository is currently public. We will not commit API credentials, private provider responses or unapproved raw outputs. Local raw data and secrets are excluded by `.gitignore`.

@@ -1,5 +1,7 @@
 # Literature positioning and novelty audit
 
+We are mapping the closest existing studies to identify what our counterfactual intervention can contribute without claiming to discover already documented behaviors.
+
 **Working reading list, NOT a completed systematic review. Bibliographic metadata and novelty claims must be independently checked before paper submission.**
 
 ## Closest threats to novelty

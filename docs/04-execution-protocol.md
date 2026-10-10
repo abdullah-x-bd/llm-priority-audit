@@ -1,5 +1,7 @@
 # Execution and audit protocol
 
+We will run only the prespecified prompts after independent review, freezing and pilot compatibility checks. This protocol documents our planned procedure, not a run that has already happened.
+
 **Not yet implemented.** The document specifies how eventual experiment code must behave.
 
 ## Preparations

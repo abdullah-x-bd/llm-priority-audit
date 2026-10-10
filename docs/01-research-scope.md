@@ -1,5 +1,7 @@
 # Research scope and claims
 
+We define our empirical scope and limit our conclusions to behavior observed in the fictional decision environments we construct.
+
 **Status:** Draft, 2026-10-10. No data collected.
 
 ## Primary question

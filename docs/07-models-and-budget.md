@@ -1,5 +1,7 @@
 # OpenRouter roster and budget
 
+We plan a five-model OpenRouter comparison subject to current pricing, compatibility, statistical precision and our strict budget ceiling.
+
 **Draft pricing snapshot, checked 2026-10-10. Recheck via OpenRouter before any paid experiment.** USD per million tokens.
 
 | Model slug | Input | Output | Pricing page |

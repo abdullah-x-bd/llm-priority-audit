@@ -1,5 +1,7 @@
 # Statistical analysis plan
 
+We will report our full outcome distribution, including invalid responses and failures, and use scenario families rather than individual prompts as the basis for uncertainty estimation.
+
 **DRAFT. Not preregistered. No observed results.**
 
 ## Trial and analysis units

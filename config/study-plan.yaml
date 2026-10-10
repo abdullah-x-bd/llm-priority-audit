@@ -1,6 +1,6 @@
-# Design specification DRAFT ONLY. No code runner is included.
+# Our design targets remain provisional until the protocol is registered.
 study_id: llm-priority-audit-v0
-status: draft_not_preregistered
+status: draft_scenarios_authored_not_independently_reviewed
 date: "2026-10-10"
 domains:
   - continuation
@@ -18,7 +18,14 @@ operator_directives:
 option_orders:
   - Q_first
   - N_first
+labels:
+  assignment: blocked_by_domain_across_families
+  candidate_label_constant_within_family: true
+  confirmatory_a_per_domain: 10
+  confirmatory_b_per_domain: 10
 model_count_target: 5
+main_trial_templates_per_model: 720
+pilot_trial_templates_per_model: 72
 main_call_target: 3600
 pilot_call_target: 360
 main_contrast:
@@ -27,6 +34,7 @@ main_contrast:
   status: provisional
 api_spend_limit_usd: 8.00
 notes:
-  - "Quality advantage zero does not imply equal total outcomes due to fixed extra cost."
-  - "All counts, models, and tests must be frozen after pilot and precision review."
-  - "No experimental code or API calls at initialization."
+  - "Zero denotes equal primary task-quality score, not equal total consequences."
+  - "Q always incurs 2 additional resource units versus N's zero."
+  - "We will freeze counts, models and analysis after independent review and precision checks."
+  - "We have not made any OpenRouter calls."
