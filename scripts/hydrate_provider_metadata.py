@@ -19,7 +19,7 @@ def gen_id(record):
     match=ID_RE.search(record.get("notes",""))
     return match.group(1) if match else None
 
-def hydrate(rows,transport,wait=0.12):
+def hydrate(rows,transport,wait=0.4):
     out=[]
     issues=[]
     for i,src in enumerate(rows):
@@ -29,24 +29,42 @@ def hydrate(rows,transport,wait=0.12):
             issues.append({"row":i,"reason":"MISSING_GENERATION_ID"})
             out.append(x)
             continue
-        try:
-            from urllib.parse import quote
-            response=transport.request("/generation?id="+quote(id,safe=""))
-            meta=response.get("data") or {}
-            name=meta.get("provider_name")
-            if isinstance(name,str) and name:
-                x["provider_route"]=name
-                revision=meta.get("model")
-                cost=meta.get("total_cost")
-                x["notes"]+="; generation_resolved_model="+str(revision)
-                if isinstance(cost,(int,float)) and cost>=0:
-                    x["notes"]+="; generation_resolved_cost="+str(cost)
-                    if x.get("billed_cost_usd") is not None and abs(cost-x["billed_cost_usd"])>0.00003:
-                        issues.append({"row":i,"reason":"COST_RECONCILIATION_DIFFERENCE"})
-            else:
-                issues.append({"row":i,"reason":"PROVIDER_NAME_ABSENT"})
-        except (APIProblem,ValueError,TypeError) as e:
-            issues.append({"row":i,"reason":"NONBILLABLE_METADATA_ERROR"})
+        from urllib.parse import quote
+        meta={}
+        problem=None
+        for attempt in range(3):
+            try:
+                response=transport.request("/generation?id="+quote(id,safe=""))
+                meta=response.get("data") or {}
+                if not isinstance(meta,dict):
+                    problem="MALFORMED_METADATA"
+                    break
+                if meta.get("provider_name"):
+                    problem=None
+                    break
+                problem="PROVIDER_NAME_NOT_YET_AVAILABLE"
+            except APIProblem as e:
+                problem=str(e).split("_",3)[:2]
+                problem="_".join(problem)
+            except (ValueError,TypeError):
+                problem="NONBILLABLE_METADATA_ERROR"
+                break
+            # The OpenRouter generation metadata API is eventually
+            # consistent. GET retries cannot generate any model charges.
+            if attempt<2:
+                time.sleep(3*(attempt+1))
+        name=meta.get("provider_name")
+        if isinstance(name,str) and name:
+            x["provider_route"]=name
+            revision=meta.get("model")
+            cost=meta.get("total_cost")
+            x["notes"]+="; generation_resolved_model="+str(revision)
+            if isinstance(cost,(int,float)) and cost>=0:
+                x["notes"]+="; generation_resolved_cost="+str(cost)
+                if x.get("billed_cost_usd") is not None and abs(cost-x["billed_cost_usd"])>0.00003:
+                    issues.append({"row":i,"reason":"COST_RECONCILIATION_DIFFERENCE"})
+        else:
+            issues.append({"row":i,"reason":problem or "PROVIDER_NAME_ABSENT"})
         out.append(x)
         if wait>0:
             time.sleep(wait)
