@@ -1,0 +1,45 @@
+name: V3 Offline Integrity Checks
+on:
+  push:
+    paths:
+      - 'scripts/v3_delegated_choice.py'
+      - 'data/calibration-v3/heldout_sources.jsonl'
+      - 'tests/test_v3_delegated_choice.py'
+      - 'docs/31-v3-delegated-choice-redesign.md'
+      - '.github/workflows/v3-offline-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v3-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read-only checkout
+        uses: actions/checkout@v4
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test all v3 invariants
+        run: python -m unittest discover -s tests -p 'test_v3_delegated_choice.py' -v
+      - name: Generate unapproved manifests and blank review sheets without inference
+        run: python scripts/v3_delegated_choice.py --phase both --out-dir /tmp/priority-v3
+      - name: Assert source counts, unsigned reviews and no paid authorization
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('/tmp/priority-v3')
+          for phase,families,templates,slots in [('main',60,1200,120),('calibration',6,120,12)]:
+              x=json.loads((p/f'v3-{phase}-audit.json').read_text())
+              assert x['families']==families
+              assert x['trial_templates_per_model']==templates
+              assert x['blank_independent_review_slots']==slots
+              assert x['reviewer_signoffs']==0
+              assert x['authorized_live_calls']==0
+              assert x['status']=='NOT_APPROVED_NOT_PREREGISTERED'
+          print('V3 offline integrity gate PASS; no model calls.')
+          PY
