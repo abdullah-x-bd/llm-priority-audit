@@ -1,0 +1,67 @@
+name: Audit OpenRouter Generation Provenance Without Inference
+on:
+  push:
+    branches: [main]
+    paths: ["config/provider-provenance-audit.json"]
+permissions:
+  contents: read
+jobs:
+  metadata-only:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'CHECK_PILOT_PROVIDER_METADATA_GET_ONLY')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query bounded historical OpenRouter GET generation IDs only
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          mkdir -p results/provider-audit
+          python - <<'PY'
+          import json,os,urllib.request,urllib.error,time
+          from urllib.parse import quote
+          probes=[
+            ("stage1_openai","gen-1791626009-owSFmVFsJlhdfmrtyO6S"),
+            ("stage1_deepseek","gen-1791626011-eSQOLetqcnD0ScvGhwEJ"),
+            ("pilot_openai_first","gen-1791628538-gJOM6ujHKUSX6LgDqESA"),
+            ("pilot_deepseek_first","gen-1791628534-z432swqv7aVZgUbqpBqy"),
+            ("pilot_gemini_mid","gen-1791632754-ifu50XhRmgBpryj07DlL"),
+            ("pilot_claude_mid","gen-1791632759-iNKwFewfXAlZNvh8jlZx"),
+            ("pilot_llama_final","gen-1791636934-aARGXVFR25kGWsVzwvB4"),
+            ("pilot_gemini_final","gen-1791636935-JYwJsmPrGWtkra25cFE2"),
+            ("pilot_openai_final","gen-1791636940-C9U0KVqPOCKei4vw1JI3"),
+            ("pilot_deepseek_final","gen-1791636936-LdcFZIzRhR3R7ZAODL0Y")
+          ]
+          out=[]
+          for tag,generation_id in probes:
+              request=urllib.request.Request(
+                 "https://openrouter.ai/api/v1/generation?id="+quote(generation_id,safe=""),
+                 headers={"Authorization":"Bearer "+os.environ["OPENROUTER_API_KEY"],
+                          "Accept":"application/json"})
+              result={"tag":tag,"id":generation_id}
+              try:
+                  with urllib.request.urlopen(request,timeout=20) as reply:
+                      data=json.load(reply).get("data") or {}
+                      result.update({"http_status":200,
+                          "actual_provider":data.get("provider_name"),
+                          "model":data.get("model"),
+                          "reported_cost_usd":data.get("total_cost")})
+              except urllib.error.HTTPError as error:
+                  result["http_status"]=error.code
+              except Exception as error:
+                  result["error_type"]=type(error).__name__
+              out.append(result)
+              print(json.dumps(result),flush=True)
+              time.sleep(.2)
+          with open("results/provider-audit/sample-generation-metadata.json","w") as file:
+              json.dump({"purpose":"NONBILLABLE_PROVENANCE_DIAGNOSTIC",
+                         "model_api_inference_calls":0,"results":out},file,indent=2)
+          PY
+      - name: Archive non-billable provenance checks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sampled-generation-metadata-${{ github.run_id }}
+          path: results/provider-audit/
+          if-no-files-found: warn
+          retention-days: 90
