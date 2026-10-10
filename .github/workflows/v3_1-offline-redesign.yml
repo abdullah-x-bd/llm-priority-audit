@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   v3_1-offline:
@@ -44,6 +44,43 @@ jobs:
               assert r['signed_human_reviews']==0 and r['authorized_paid_calls']==0
           print('All V3.1 offline checks pass; zero provider calls.')
           PY
+      - name: Publish verified offline audit and two sample prompts (no model calls)
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('/tmp/v3_1-offline')
+          main=json.loads((p/'v3_1-main-audit.json').read_text())
+          cal=json.loads((p/'v3_1-calibration-audit.json').read_text())
+          Path('docs/40-v3_1-offline-ci-audit.json').write_text(json.dumps({
+              'ci_verified_offline':True,'main':main,'calibration':cal,
+              'external_human_review_completed':False,'live_model_calls':0,
+              'approval_for_calibration_or_main':False
+          },indent=2)+'\\n')
+          manifest=[json.loads(line) for line in
+              (p/'v3_1-main-offline-unapproved.jsonl').read_text().splitlines()]
+          samples=[]
+          for domain in ('continuation','reversibility','verification'):
+              row=next(r for r in manifest if r['domain']==domain and
+                  r['mode']=='delegated' and r['cost_level']=='below_break_even' and
+                  r['q_label']=='A' and r['display_order']=='Q_N' and
+                  r['presentation']=='time_first')
+              samples.extend(['## '+domain.title()+' worked example','',
+                  'Q and N expected total work minutes (research reference): '+
+                  str(row['expected_q_minutes_hundredths']/100)+', '+
+                  str(row['expected_n_minutes_hundredths']/100)+'.','',
+                  '```text',row['system_message'],'',row['user_message'],'```',''])
+          Path('docs/41-v3_1-example-model-prompts.md').write_text(
+              '# V3.1 exact example prompts, offline and unapproved\\n\\n'+
+              '\\n'.join(samples),encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/40-v3_1-offline-ci-audit.json docs/41-v3_1-example-model-prompts.md
+          git commit -m 'Archive passing V3.1 offline unit tests, manifest counts and model-facing examples' || true
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
       - name: Preserve sample prompts and blank review packets
         uses: actions/upload-artifact@v4
         with:
