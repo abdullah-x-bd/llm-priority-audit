@@ -103,11 +103,12 @@ def key_remaining():
         raise RuntimeError("STOP_KEY_BALANCE_OR_CEILING")
     return remain
 
-def verify_freeze():
+def verify_freeze(require_auth=True):
     conf=json.loads(PROTOCOL.read_text())
-    launch=json.loads(AUTH.read_text())
-    if launch!=REQUIRED_AUTH:
-        raise RuntimeError("STOP_NOT_AUTHORIZED_OR_AUTH_MODIFIED")
+    if require_auth:
+        launch=json.loads(AUTH.read_text())
+        if launch!=REQUIRED_AUTH:
+            raise RuntimeError("STOP_NOT_AUTHORIZED_OR_AUTH_MODIFIED")
     if conf["protocol_id"]!=REQUIRED_AUTH["protocol_id"] or conf["status"]!="FROZEN_BEFORE_ANY_V3_1_BEHAVIORAL_API_REQUEST":
         raise RuntimeError("STOP_PROTOCOL_CHANGED")
     for filename,blob in GIT_BLOBS.items():
@@ -149,8 +150,8 @@ def start_state(stage):
     else:
         if not ledger.exists():raise RuntimeError("STOP_NO_CALIBRATION_LEDGER")
         record=json.loads(ledger.read_text())
-        if record.get("status")!="CALIBRATION_COMPLETE_GATE_PASS" or
-           (OUT/"main-report.json").exists():
+        if (record.get("status")!="CALIBRATION_COMPLETE_GATE_PASS" or
+            (OUT/"main-report.json").exists()):
             raise RuntimeError("STOP_MAIN_NOT_AUTHORIZED_BY_PASSED_CALIBRATION")
         for k in ("charged_usd","held_unknown_usd","records_by_stage"):
             STATE[k]=record[k]
@@ -463,7 +464,7 @@ def run_stage(stage,conf):
                           "inflight":len(STATE["inflight"])}),flush=True)
 
 def mock():
-    conf=verify_freeze()
+    conf=verify_freeze(require_auth=False)
     cal=build("calibration");main=build("main")
     assert len(cal)==288 and len(main)==1680
     def fake(trial,model,decision=None,cost=0.0005):
