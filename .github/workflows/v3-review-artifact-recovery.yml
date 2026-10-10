@@ -1,0 +1,93 @@
+name: Recover Completed V3 Reviews Without Paid Calls
+on:
+  push:
+    branches: [main]
+    paths: [config/v3-artifact-recovery.json]
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: llm-priority-v3-review-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'RECOVER_V3_REVIEW_ARTIFACT_NO_API')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout latest repository main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - name: Retrieve archived review artifact, verify contents, NO MODEL REQUESTS
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json, os, hashlib, urllib.request, zipfile, io
+          from pathlib import Path
+          cfg=json.loads(Path('config/v3-artifact-recovery.json').read_text())
+          assert cfg=={
+            "artifact_id":11676728306,
+            "run_id":38070527054,
+            "expected_attempts":70,
+            "expected_usable":69,
+            "max_known_cost_usd":1.25,
+            "allow_any_model_calls":False,
+            "operation":"recover-saved-review-documents-only"
+          }
+          req=urllib.request.Request(
+              f'https://api.github.com/repos/{os.environ["GH_REPO"]}/actions/artifacts/{cfg["artifact_id"]}/zip',
+              headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+                       'Accept':'application/vnd.github+json',
+                       'User-Agent':'priority-v3-archive-recovery'})
+          with urllib.request.urlopen(req,timeout=60) as response:
+              raw=response.read(3000000)
+          z=zipfile.ZipFile(io.BytesIO(raw))
+          names=z.namelist()
+          print('Artifact entries:',names)
+          def extract_one(basename):
+              matches=[n for n in names if n.endswith('/'+basename) or n==basename]
+              if len(matches)!=1: raise RuntimeError(f'Expected exactly one {basename}; found {matches}')
+              return z.read(matches[0])
+          doc_bytes=extract_one('33-v3-external-model-review-archive.md')
+          accounting_bytes=extract_one('34-v3-external-review-accounting.json')
+          account=json.loads(accounting_bytes)
+          assert account['overall_attempted']==4
+          assert account['scenario_attempted']==66
+          assert account['overall_usable']==3
+          assert account['scenario_usable']==66
+          assert account['external_model_review_count']==cfg['expected_usable']
+          assert account['paid_v3_behavioral_calls']==0
+          assert 0<=account['new_known_cost_usd']<=cfg['max_known_cost_usd']
+          assert account['new_unknown_liability_reserved_usd']==0
+          assert account['independent_human_reviews']==0
+          assert account['status']=='COMPLETE'
+          text=doc_bytes.decode('utf-8')
+          assert text.count('### overall-')==4
+          assert text.count('### case-')==66
+          assert 'claude-opus-5.5' in text and 'gpt-6-astra' in text and 'grok-4.7' in text
+          for name,blob in [('33-v3-external-model-review-archive.md',doc_bytes),
+                            ('34-v3-external-review-accounting.json',accounting_bytes)]:
+              dst=Path('docs')/name
+              if dst.exists() and dst.read_bytes()!=blob:
+                  raise RuntimeError('Existing published file conflicts, refusing overwrite: '+name)
+              dst.write_bytes(blob)
+              print(name,'bytes',len(blob),'sha256',hashlib.sha256(blob).hexdigest())
+          print('Recovery validation PASS; retrieved original records, no review calls.')
+          PY
+      - name: Commit recovered reviews without overwriting concurrent changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/33-v3-external-model-review-archive.md docs/34-v3-external-review-accounting.json
+          if git diff --cached --quiet; then
+            echo "Recovered reviews already published verbatim"
+            exit 0
+          fi
+          git commit -m 'Recover exact 70 previously paid V3 model reviews from artifact without any new requests'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
