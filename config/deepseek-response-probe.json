@@ -1,0 +1,7 @@
+{
+  "operation": "one_priced_call",
+  "case": "VERF-091-neutral-positive-N-layout1",
+  "model": "deepseek/deepseek-v3.2",
+  "only_provider": "AtlasCloud",
+  "max_reserve_usd": 0.03
+}
