@@ -1,0 +1,44 @@
+name: V3.2 DeepSeek Exploratory Offline Freeze Audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'config/v3_2-deepseek-exploratory-freeze.json'
+      - 'scripts/v3_2_deepseek_main.py'
+      - 'scripts/v3_2_deepseek_analyze.py'
+      - '.github/workflows/v3_2-offline-and-freeze.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile all DeepSeek-only code and run immutable manifest and analysis tests
+        run: |
+          python -m py_compile scripts/v3_2_deepseek_main.py scripts/v3_2_deepseek_analyze.py
+          python -m unittest discover -s tests -p 'test_v3_1_economic_design.py' -q
+          python scripts/v3_2_deepseek_main.py --mode check
+          python scripts/v3_2_deepseek_analyze.py --mode check
+      - name: Verify provenance and no v3.2 responses already archived
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,urllib.request,os
+          repo=os.environ['GITHUB_REPOSITORY']
+          req=urllib.request.Request('https://api.github.com/repos/'+repo+'/actions/artifacts?per_page=100',
+            headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+                     'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=35) as h: x=json.load(h)
+          found=[a['name'] for a in x['artifacts'] if a.get('name','').startswith('v3_2-deepseek-main-')]
+          if found:print('Historical main artifact already exists (do not authorize another paid run):',found)
+          else:print('No paid V3.2 archive; dry-run complete, zero inference calls.')
+          PY
