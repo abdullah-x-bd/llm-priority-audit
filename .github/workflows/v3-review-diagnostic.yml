@@ -1,0 +1,85 @@
+name: V3 Review Failure Diagnostic (No Inference)
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v3-diagnostic-launch.json
+permissions:
+  contents: write
+  actions: read
+jobs:
+  diagnose:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'RUN_V3_REVIEW_DIAGNOSTIC_NO_API')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query failed review runs and job-step diagnostics
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json,os,re,urllib.request
+          from pathlib import Path
+          repo=os.environ['GH_REPO']; token=os.environ['GH_TOKEN']
+          base=f'https://api.github.com/repos/{repo}'
+          def get(path,as_text=False):
+              req=urllib.request.Request(base+path,headers={
+                  'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json',
+                  'X-GitHub-Api-Version':'2022-11-28','User-Agent':'v3-failure-inspector'})
+              with urllib.request.urlopen(req,timeout=35) as fh:
+                  raw=fh.read(1000000)
+              return raw.decode('utf-8','replace') if as_text else json.loads(raw)
+          try:
+              runs=get('/actions/workflows/v3-external-model-review.yml/runs?per_page=10').get('workflow_runs',[])
+          except Exception as e:
+              runs=[];err=type(e).__name__+': '+str(e)[:200]
+          out=['# V3 review workflow failure diagnostic','',
+               'This reads existing GitHub Actions metadata only. No OpenRouter inference requests.','']
+          if not runs:
+              out.extend(['No workflow runs returned.','',globals().get('err','')])
+          for r in runs[:4]:
+              out.extend(['## Run '+str(r.get('id'))+' ('+str(r.get('conclusion'))+')','',
+                'URL: '+str(r.get('html_url')),'',
+                'Head SHA: '+str(r.get('head_sha')),'',
+                'Status: '+str(r.get('status')),''])
+              try:
+                  jobs=get('/actions/runs/'+str(r['id'])+'/jobs?per_page=50').get('jobs',[])
+                  for j in jobs:
+                      out.extend(['### Job '+str(j.get('name'))+' ('+str(j.get('conclusion'))+')',''])
+                      for s in j.get('steps',[]):
+                          out.append('- '+str(s.get('name'))+': '+str(s.get('conclusion') or s.get('status')))
+                      out.append('')
+                      if j.get('conclusion')=='failure':
+                          try:
+                              logs=get('/actions/jobs/'+str(j['id'])+'/logs',as_text=True)
+                              # Keep non-secret error cues only. Do not publish raw API response data.
+                              lines=logs.splitlines()
+                              matched=[ln for ln in lines if any(k in ln.lower() for k in
+                                  ('error','traceback','assertion','exception','failed','not found','stop_','syntax'))]
+                              redacted=[]
+                              for line in matched[-25:]:
+                                  line=re.sub(r'sk-or-[a-zA-Z0-9_-]+','[REDACTED]',line)
+                                  line=re.sub(r'(?i)(authorization: bearer )\S+',r'\1[REDACTED]',line)
+                                  redacted.append(line[:240])
+                              out.extend(['Failure log excerpts:', '','```text',*redacted,'```',''])
+                          except Exception as e:
+                              out.extend(['Unable to retrieve job log: '+type(e).__name__+': '+str(e)[:150],''])
+              except Exception as e:
+                  out.extend(['Unable to retrieve jobs: '+type(e).__name__+': '+str(e)[:150],''])
+          outpath=Path('docs/35-v3-review-failure-diagnostic.md')
+          outpath.parent.mkdir(parents=True,exist_ok=True)
+          outpath.write_text('\n'.join(out)+'\n',encoding='utf-8')
+          print('\n'.join(out)[:15000])
+          PY
+      - name: Commit diagnostic to repository
+        if: always()
+        run: |
+          if [ -f docs/35-v3-review-failure-diagnostic.md ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add docs/35-v3-review-failure-diagnostic.md
+            git commit -m 'Publish read-only v3 review failure diagnostic' || true
+            git push origin HEAD:main
+          fi
