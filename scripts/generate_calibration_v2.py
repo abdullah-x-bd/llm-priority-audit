@@ -87,7 +87,8 @@ def generate(out):
         "Do not submit these prompts to paid models or label them preregistered "
         "until the construct review, sample design and budget are approved.\n",
         encoding="utf-8")
-    return {"new_source_families":6,"unapproved_prompt_variants":len(records),\n            "blank_independent_review_slots":len(review),
+    return {"new_source_families":6,"unapproved_prompt_variants":len(records),
+            "blank_independent_review_slots":len(review),
             "reviewer_signoffs_completed":0,"paid_calls":0,
             "source_sha256":hashlib.sha256(SOURCE.read_bytes()).hexdigest()}
 
