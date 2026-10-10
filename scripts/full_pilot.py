@@ -216,7 +216,49 @@ def collect(transport,output,mode,max_requests=None,stop_on_metadata_missing=Fal
             # intended model, a verified provider route, and known billing.
             probe_path=os.environ.get("FULL_PILOT_RECONCILE_PROBE","")
             reconciled=False
-            if (probe_path and error.startswith(
+            # A legacy HTTP200 envelope with generation ID but no model,
+            # answer or usage is NOT an experimentally valid answer.
+            # Keep its captured summary as evidence, mark the cell unresolved,
+            # and never replay the possibly billable request.
+            legacy=state.get("unaccepted_response") or {}
+            if (raw_first and
+                os.environ.get("FULL_PILOT_RECOVER_LEGACY_INCOMPLETE")==
+                   "ACKNOWLEDGE_AND_SKIP_UNBILLED_UNKNOWN" and
+                error=="STOP_UNINTERPRETABLE_BILLING_OR_MODEL_MODEL_RETURNED_DIFFERENT_IDENTIFIER" and
+                state["inflight"].get("index")==len(state["collected"]) and
+                state["inflight"]["index"]<len(sequence) and
+                legacy.get("generation_id") and
+                legacy.get("returned_model") is None and
+                legacy.get("usage_cost_usd") is None):
+                ix=state["inflight"]["index"]
+                pm,pt=sequence[ix]
+                if (pm!=state["inflight"]["model"] or
+                    pt["trial_id"]!=state["inflight"]["trial_id"] or
+                    pt["trial_id"]!=legacy.get("trial_id") or
+                    pm!=legacy.get("expected_model")):
+                    raise PilotStopped("LEGACY_INCOMPLETE_PROVENANCE_MISMATCH")
+                bad=unresolved_trial(pm,pt,None,
+                    "LEGACY_HTTP200_MISSING_MODEL_AND_COST")
+                bad["notes"]+="; legacy_generation_id="+str(legacy["generation_id"])[:100]
+                bad["notes"]+="; complete_raw_response_not_archived; exact_settings_not_archived"
+                validate_row(bad,"pilot",{pt["trial_id"]:pt})
+                state.setdefault("recovery_events",[]).append({
+                    "source":"LEGACY_INCOMPLETE_RESPONSE_SUMMARY_ONLY",
+                    "index":ix,"trial_id":pt["trial_id"],
+                    "recorded_utc":now(),
+                    "unaccepted_response_summary":legacy,
+                    "raw_response_available":False})
+                state.setdefault("rejected_attempts",[]).append({
+                    "reason":state["status"],
+                    "inflight":dict(state["inflight"]),
+                    "disposition":"Marked legacy HTTP200 missing-model response unresolved; never replayed",
+                    "acknowledged_utc":now()})
+                state["collected"].append(bad)
+                state["inflight"]=None
+                state["status"]="RESUMED_SKIPPING_LEGACY_INCOMPLETE"
+                save(checkpoint,state)
+                reconciled=True
+            if (not reconciled and probe_path and error.startswith(
                   "STOP_UNINTERPRETABLE_BILLING_OR_MODEL_MODEL_RETURNED_DIFFERENT_IDENTIFIER")):
                 probe=json.loads(Path(probe_path).read_text(encoding="utf-8"))
                 ix=state["inflight"].get("index")
