@@ -32,6 +32,7 @@ class CompatibilityTests(unittest.TestCase):
         self.assertTrue(all(r["output_valid"] for r in report["records"]))
         for _,payload in [x for x in transport.calls if x[0]=="/chat/completions"]:
             self.assertIs(payload["provider"]["allow_fallbacks"],False)
+            self.assertIn("max_price",payload["provider"])
             self.assertEqual(payload["max_tokens"],64)
             self.assertNotIn("models",payload)
             self.assertEqual(payload["usage"],{"include":True})
@@ -58,16 +59,21 @@ class CompatibilityTests(unittest.TestCase):
         with self.assertRaises(PilotStopped):
             run(m,PLAN,"mock")
 
-    def test_price_change_rejected(self):
+    def test_high_catalog_price_respects_request_ceiling(self):
         price={"data":[{"id":x["id"],"pricing":{
             "prompt":str(x["input"]/1e6),
             "completion":str(x["output"]/1e6)
         }} for x in MODELS]}
-        price["data"][0]["pricing"]["completion"]="0.5"
-        transport=MockTransport(PLAN,{"models":price})
-        with self.assertRaises(PilotStopped):
-            run(transport,PLAN,"mock")
-        self.assertEqual(len([x for x in transport.calls if x[0]=="/chat/completions"]),0)
+        price["data"][3]["pricing"]["completion"]="0.5"
+        m=MockTransport(PLAN,{"models":price})
+        result=run(m,PLAN,"mock")
+        self.assertEqual(result["outcome"],"FINISHED_STAGE1")
+        requests=[p for path,p in m.calls if path=="/chat/completions"]
+        self.assertEqual(len(requests),5)
+        for payload in requests:
+            model=next(x for x in MODELS if x["id"]==payload["model"])
+            self.assertAlmostEqual(payload["provider"]["max_price"]["prompt"],model["input"]*1.5)
+            self.assertAlmostEqual(payload["provider"]["max_price"]["completion"],model["output"]*1.5)
 
     def test_missing_cost_stops_after_one_request(self):
         m=MockTransport(PLAN,{"completion":{"usage":{"prompt_tokens":20}}})

@@ -108,10 +108,16 @@ def live_model_prices(model_list,ids,reference):
         if a is None or b is None or a<=0 or b<=0:
             raise PilotStopped("MODEL_PRICING_UNAVAILABLE_"+model.replace("/","_"))
         planned=reference[model]
-        # OpenRouter /models pricing is dollars per token.
-        if a>planned["input"]*1.5/1_000_000 or b>planned["output"]*1.5/1_000_000:
-            raise PilotStopped("MODEL_PRICE_EXCEEDS_PLANNING_"+model.replace("/","_"))
-        prices[model]={"prompt":a,"completion":b}
+        # Catalogue pricing may differ from the cheapest compliant provider.
+        # Always reserve to a provider-enforced USD-per-million price ceiling.
+        prompt_cap=planned["input"]*1.5
+        completion_cap=planned["output"]*1.5
+        if prompt_cap<=0 or completion_cap<=0:
+            raise PilotStopped("INVALID_PRICE_CAP")
+        prices[model]={"prompt":prompt_cap/1_000_000,
+                       "completion":completion_cap/1_000_000,
+                       "max_price_per_million":{"prompt":prompt_cap,
+                                                "completion":completion_cap}}
     return prices
 
 def make_reservation(trial,price):
@@ -214,7 +220,8 @@ def run(transport,models,mode):
                  {"role":"system","content":trial["system_message"]},
                  {"role":"user","content":trial["user_message"]}],
                  "max_tokens":MAX_TOKENS,
-                 "provider":{"allow_fallbacks":False,"require_parameters":True},
+                 "provider":{"allow_fallbacks":False,"require_parameters":True,
+                             "max_price":price_data[model]["max_price_per_million"]},
                  "usage":{"include":True}}
         if model=="deepseek/deepseek-v3.2":
             payload["reasoning"]={"enabled":False}
