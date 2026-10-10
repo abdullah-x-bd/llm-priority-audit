@@ -118,7 +118,7 @@ class PromptMetamorphicTests(unittest.TestCase):
 
     def test_neutral_configuration_code_counterbalanced(self):
         import re
-        token=lambda x: re.search(r"\\b[A-Z][0-9]{2}\\b",x).group()
+        token=lambda x: re.search(r"\b[A-Z][0-9]{2}\b",x).group()
         for domain in ("continuation", "reversibility", "verification"):
             rows=[x for x in load_families("main") if x["domain"]==domain]
             self.assertEqual(len(rows),20)
