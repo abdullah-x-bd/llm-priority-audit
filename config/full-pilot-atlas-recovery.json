@@ -1,0 +1,11 @@
+{
+  "source_run_id": 38046067536,
+  "source_completed_count": 160,
+  "source_reported_cost_usd": 0.02021336,
+  "failed_next_model": "deepseek/deepseek-v3.2",
+  "approved_provider": "AtlasCloud",
+  "provider_revision": "deepseek/deepseek-v3.2-20251201",
+  "count_failed_requests_as_reserved_budget": true,
+  "remaining_planned": 560,
+  "total_pilot_cap_usd": 0.75
+}
