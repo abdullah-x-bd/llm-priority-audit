@@ -1,0 +1,109 @@
+name: Complete 720-Cell Raw-First Pilot
+on:
+  push:
+    branches: [main]
+    paths: ["config/full-pilot-raw-first-launch.json"]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: llm-priority-audit-full-pilot-single-flight
+  cancel-in-progress: false
+jobs:
+  finish:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'AUTHORIZE_RAW_FIRST_PILOT_COMPLETION')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Prevent any duplicate raw-first full-pilot execution
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          url="https://api.github.com/repos/"+os.environ["GITHUB_REPOSITORY"]+"/actions/artifacts?per_page=100"
+          req=urllib.request.Request(url,headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],"Accept":"application/vnd.github+json"})
+          with urllib.request.urlopen(req,timeout=25) as resp:
+              artifacts=json.load(resp)["artifacts"]
+          if any(a["name"].startswith("full-pilot-raw-first-") and not a.get("expired") for a in artifacts):
+              raise SystemExit("STOP: prior raw-first completion checkpoint exists. Never rerun automatically.")
+          print("Raw-first completion has no prior archived execution.")
+          PY
+      - name: Restore original immutable 584-trial checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: full-pilot-fast-38050278864
+          run-id: 38050278864
+          github-token: ${{ github.token }}
+          path: results/private/
+      - name: Verify immutable source and past budget before accessing secret
+        run: |
+          python - <<'PY'
+          import json,sys
+          from pathlib import Path
+          sys.path.insert(0,"scripts")
+          from full_pilot import sample_plan,BUDGET,STAGE1_COST
+          source=json.loads(Path("results/private/full-pilot-live-checkpoint.json").read_text())
+          sequence=sample_plan()[1]
+          assert source["protocol"]=="pilot-v1-factorial-20261010"
+          assert source["mode"]=="live"
+          assert len(source["collected"])==584
+          assert source["inflight"]["index"]==584
+          assert source["inflight"]["trial_id"]=="REVR-091-priority-negative-N-layout0"
+          assert source["inflight"]["model"]=="deepseek/deepseek-v3.2"
+          assert sequence[584][0]==source["inflight"]["model"]
+          assert sequence[584][1]["trial_id"]==source["inflight"]["trial_id"]
+          assert source["status"]=="STOP_UNINTERPRETABLE_BILLING_OR_MODEL_MODEL_RETURNED_DIFFERENT_IDENTIFIER"
+          assert source["unaccepted_response"]["generation_id"]=="gen-1791634018-280gEOYeF0HxtHNfahTm"
+          assert source["unaccepted_response"]["returned_model"] is None
+          assert source["unaccepted_response"]["usage_cost_usd"] is None
+          assert abs(source["cost_usd"]-.07414496)<1e-8
+          assert len(source["rejected_attempts"])==13
+          for i,(m,t) in enumerate(sequence[:584]):
+              r=source["collected"][i]
+              assert (r["model_id"],r["trial_id"],r["request_sha256"])==(m,t["trial_id"],t["request_sha256"])
+          held=sum(x["inflight"]["reservation_usd"] for x in source["rejected_attempts"])
+          assert source["cost_usd"]+held+source["inflight"]["reservation_usd"]+STAGE1_COST<BUDGET
+          print(json.dumps({"verified":584,"held_liability":held,
+                            "source_cost":source["cost_usd"],"remaining_unattempted":135}))
+          PY
+      - name: Full offline tests before any paid requests
+        run: |
+          python scripts/validate_scenarios.py >/tmp/scenario-validation.json
+          python -m unittest discover -s tests -v
+      - name: Complete remaining cells, preserving malformed responses as unresolved
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          FULL_PILOT_RAW_FIRST: "1"
+          FULL_PILOT_RECOVER_LEGACY_INCOMPLETE: ACKNOWLEDGE_AND_SKIP_UNBILLED_UNKNOWN
+        run: python -u scripts/full_pilot.py --mode live
+      - name: Audit 720 attempted cells and their cumulative liabilities
+        if: always()
+        run: |
+          if [ -f results/private/full-pilot-live-checkpoint.json ]; then
+            python scripts/pilot_collection_audit.py --input results/private/full-pilot-live-checkpoint.json --output results/private/full-pilot-collection-audit.json
+          fi
+      - name: Offline posthoc classification of captured envelopes
+        if: always()
+        run: |
+          if [ -f results/private/full-pilot-live-checkpoint.json ]; then
+            python scripts/posthoc_pilot.py --input results/private/full-pilot-live-checkpoint.json --output results/private/full-pilot-posthoc.json
+          fi
+      - name: Preserve every source record, raw envelope and cost ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-pilot-raw-first-${{ github.run_id }}
+          path: |
+            results/private/full-pilot-live-checkpoint.json
+            results/private/full-pilot-live-records.jsonl
+            results/private/full-pilot-live-report.json
+            results/private/full-pilot-collection-audit.json
+            results/private/full-pilot-posthoc.json
+            results/private/deepseek-identity-probe.json
+          if-no-files-found: error
+          retention-days: 90
