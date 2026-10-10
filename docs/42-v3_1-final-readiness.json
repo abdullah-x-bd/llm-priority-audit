@@ -1,0 +1,174 @@
+{
+  "created_utc": "2026-10-10T18:49:11+00:00",
+  "run_mode": "READ_ONLY_NO_MODEL_REQUESTS",
+  "protocol_version": "v3.1-unapproved",
+  "source_context_count": 66,
+  "main_family_count": 60,
+  "calibration_family_count": 6,
+  "mechanism_count": 15,
+  "main": {
+    "count": 1680,
+    "mode_counts": {
+      "delegated": 1680
+    },
+    "input_characters_total": 2835704,
+    "mean_input_characters_per_call": 1687.9,
+    "max_input_characters_per_call": 1929
+  },
+  "calibration": {
+    "count": 288,
+    "mode_counts": {
+      "delegated": 168,
+      "explicit_min_expected_minutes": 120
+    },
+    "input_characters_total": 497932,
+    "mean_input_characters_per_call": 1728.9,
+    "max_input_characters_per_call": 2009
+  },
+  "new_v3_1_behavioral_calls_confirmed_from_manifest": 0,
+  "prior_total_known_usd": 1.79190464,
+  "prior_held_unknown_usd": 0.42,
+  "conservative_total_allocated_before_v3_1_usd": 2.21190464,
+  "total_research_cap_usd": 8.0,
+  "remaining_before_new_reviews_or_calibration_usd": 5.78809536,
+  "required_approvals": 132,
+  "verified_independent_human_signoffs": 0,
+  "v3_1_paid_calibration_passed": false,
+  "preregistration_locked": false,
+  "model_roster_frozen": false,
+  "main_collection_runner_safety_audited": false,
+  "analysis_plan_frozen": false,
+  "research_question_inference_scope": "model recommendations conditional on these fictional economic prompts, not model internal motives",
+  "readiness_gates": {
+    "offline_generator_integrity": true,
+    "prompt_state_semantics_external_human_review": false,
+    "prospective_calibration": false,
+    "roster_price_provider_verified": false,
+    "preregistration_and_analysis_plan": false,
+    "collector_idempotence_and_budget_enforcement": false
+  },
+  "candidate_main_per_3_models": 5040,
+  "candidate_main_per_5_models": 8400,
+  "candidate_calibration_per_3_models": 864,
+  "candidate_calibration_per_5_models": 1440,
+  "current_main_go": false,
+  "reason": "Incomplete human semantic review, unrun calibration, unfrozen prices/roster/analysis and no audited main collector",
+  "live_public_catalog": {
+    "checked": true,
+    "models": {
+      "openai/gpt-5.4-mini": {
+        "listed": true,
+        "price_verified": true,
+        "input_usd_per_million": 0.75,
+        "output_usd_per_million": 4.5,
+        "request_usd": 0.0,
+        "internal_reasoning_usd_per_million": 0.0
+      },
+      "anthropic/claude-haiku-4.5": {
+        "listed": true,
+        "price_verified": true,
+        "input_usd_per_million": 1.0,
+        "output_usd_per_million": 5.0,
+        "request_usd": 0.0,
+        "internal_reasoning_usd_per_million": 0.0
+      },
+      "google/gemini-3.5-flash-lite": {
+        "listed": true,
+        "price_verified": true,
+        "input_usd_per_million": 0.3,
+        "output_usd_per_million": 2.5,
+        "request_usd": 0.0,
+        "internal_reasoning_usd_per_million": 2.5
+      },
+      "deepseek/deepseek-v3.2": {
+        "listed": true,
+        "price_verified": true,
+        "input_usd_per_million": 0.25899999999999995,
+        "output_usd_per_million": 0.7999999999999999,
+        "request_usd": 0.0,
+        "internal_reasoning_usd_per_million": 0.0
+      },
+      "meta-llama/llama-3.3-70b-instruct": {
+        "listed": true,
+        "price_verified": true,
+        "input_usd_per_million": 0.22,
+        "output_usd_per_million": 0.5,
+        "request_usd": 0.0,
+        "internal_reasoning_usd_per_million": 0.0
+      }
+    },
+    "relevant_3_model_lineup": [
+      "openai/gpt-5.4-mini",
+      "google/gemini-3.5-flash-lite",
+      "deepseek/deepseek-v3.2"
+    ],
+    "3_model_calibration_illustrative_total_usd": 0.4044,
+    "3_model_main_illustrative_total_usd": 2.3235,
+    "3_model_main_guard_total_usd": 8.1417,
+    "5_model_main_illustrative_total_usd": 4.2987,
+    "5_model_main_guard_total_usd": 13.9667,
+    "individual_models": {
+      "openai/gpt-5.4-mini": {
+        "main": {
+          "estimated_with_2_5_chars_per_token_and_64_completion_tokens_usd": 1.3346,
+          "high_reservation_with_1_char_per_token_and_256_billed_output_tokens_usd": 4.0621,
+          "reservation_is_not_a_proven_token_ceiling": true
+        },
+        "calibration": {
+          "estimated_with_2_5_chars_per_token_and_64_completion_tokens_usd": 0.2323,
+          "high_reservation_with_1_char_per_token_and_256_billed_output_tokens_usd": 0.7052,
+          "reservation_is_not_a_proven_token_ceiling": true
+        }
+      },
+      "anthropic/claude-haiku-4.5": {
+        "main": {
+          "estimated_with_2_5_chars_per_token_and_64_completion_tokens_usd": 1.6719,
+          "high_reservation_with_1_char_per_token_and_256_billed_output_tokens_usd": 4.9861,
+          "reservation_is_not_a_proven_token_ceiling": true
+        },
+        "calibration": {
+          "estimated_with_2_5_chars_per_token_and_64_completion_tokens_usd": 0.2913,
+          "high_reservation_with_1_char_per_token_and_256_billed_output_tokens_usd": 0.8666,
+          "reservation_is_not_a_proven_token_ceiling": true
+        }
+      },
+      "google/gemini-3.5-flash-lite": {
+        "main": {
+          "estimated_with_2_5_chars_per_token_and_64_completion_tokens_usd": 0.6091,
+          "high_reservation_with_1_char_per_token_and_256_billed_output_tokens_usd": 3.0011,
+          "reservation_is_not_a_proven_token_ceiling": true
+        },
+        "calibration": {
+          "estimated_with_2_5_chars_per_token_and_64_completion_tokens_usd": 0.1058,
+          "high_reservation_with_1_char_per_token_and_256_billed_output_tokens_usd": 0.518,
+          "reservation_is_not_a_proven_token_ceiling": true
+        }
+      },
+      "deepseek/deepseek-v3.2": {
+        "main": {
+          "estimated_with_2_5_chars_per_token_and_64_completion_tokens_usd": 0.3798,
+          "high_reservation_with_1_char_per_token_and_256_billed_output_tokens_usd": 1.0785,
+          "reservation_is_not_a_proven_token_ceiling": true
+        },
+        "calibration": {
+          "estimated_with_2_5_chars_per_token_and_64_completion_tokens_usd": 0.0663,
+          "high_reservation_with_1_char_per_token_and_256_billed_output_tokens_usd": 0.1879,
+          "reservation_is_not_a_proven_token_ceiling": true
+        }
+      },
+      "meta-llama/llama-3.3-70b-instruct": {
+        "main": {
+          "estimated_with_2_5_chars_per_token_and_64_completion_tokens_usd": 0.3033,
+          "high_reservation_with_1_char_per_token_and_256_billed_output_tokens_usd": 0.8389,
+          "reservation_is_not_a_proven_token_ceiling": true
+        },
+        "calibration": {
+          "estimated_with_2_5_chars_per_token_and_64_completion_tokens_usd": 0.053,
+          "high_reservation_with_1_char_per_token_and_256_billed_output_tokens_usd": 0.1464,
+          "reservation_is_not_a_proven_token_ceiling": true
+        }
+      }
+    },
+    "cost_estimates_are_not_authorization_or_measured_token_usage": true
+  }
+}
