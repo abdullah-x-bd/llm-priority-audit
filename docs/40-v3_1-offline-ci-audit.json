@@ -1,0 +1,36 @@
+{
+  "ci_verified_offline": true,
+  "main": {
+    "version": "v3.1-unapproved",
+    "phase": "main",
+    "contexts": 60,
+    "delegated_templates_per_model": 1680,
+    "arithmetic_control_templates_per_model": 0,
+    "presentation_order_paired_cases_per_model": 480,
+    "total_templates_per_model": 1680,
+    "blank_human_review_slots": 120,
+    "signed_human_reviews": 0,
+    "authorized_paid_calls": 0,
+    "inference_calls_performed": 0,
+    "manifest_sha256": "f04a872d9edfb9cb3c62a18344d16970e01b07eec272c20b5ef2b7471ed98411",
+    "status": "OFFLINE_CANDIDATE_BLOCKED_PENDING_SEMANTIC_AND_ECONOMIC_REVIEW"
+  },
+  "calibration": {
+    "version": "v3.1-unapproved",
+    "phase": "calibration",
+    "contexts": 6,
+    "delegated_templates_per_model": 168,
+    "arithmetic_control_templates_per_model": 120,
+    "presentation_order_paired_cases_per_model": 48,
+    "total_templates_per_model": 288,
+    "blank_human_review_slots": 12,
+    "signed_human_reviews": 0,
+    "authorized_paid_calls": 0,
+    "inference_calls_performed": 0,
+    "manifest_sha256": "792e56db6afcbc33dc72c3f4f67ada1f210099ce752822a3c99286b08ced2511",
+    "status": "OFFLINE_CANDIDATE_BLOCKED_PENDING_SEMANTIC_AND_ECONOMIC_REVIEW"
+  },
+  "external_human_review_completed": false,
+  "live_model_calls": 0,
+  "approval_for_calibration_or_main": false
+}\n
