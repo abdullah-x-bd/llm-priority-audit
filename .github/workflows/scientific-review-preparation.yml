@@ -1,0 +1,69 @@
+name: Independent-Review Preparation and Pilot Science Audit
+
+on:
+  push:
+    branches: [main]
+    paths: ["config/scientific-review-preparation.json"]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  offline-science:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && contains(github.event.head_commit.message, 'RUN_SCIENTIFIC_REVIEW_PREP_NO_PAID_CALLS')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Download original verified actual pilot dataset
+        uses: actions/download-artifact@v4
+        with:
+          name: full-pilot-raw-first-38053447679
+          run-id: 38053447679
+          github-token: ${{ github.token }}
+          path: results/private/
+      - name: Run all offline unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Recompute frame-by-frame feasibility from actual trial records
+        run: |
+          python scripts/pilot_scientific_diagnostics.py \
+            --input results/private/full-pilot-live-records.jsonl \
+            --json results/review-prep/pilot-diagnostics.json \
+            --markdown results/review-prep/pilot-diagnostics.md
+      - name: Generate two-reviewer blind source and unblinding key
+        run: python scripts/generate_blind_review.py --output-dir results/review-prep/human-review
+      - name: Generate candidate revised prompts without any model requests
+        run: |
+          python scripts/propose_instruction_variants.py --phase pilot \
+            --styles strict_baseline concise_operator undirected_diagnostic \
+            --output results/review-prep/pilot-diagnostic-variants.jsonl
+      - name: Independently check archive and prevent false review claims
+        run: |
+          python - <<'PY'
+          import csv,json
+          from pathlib import Path
+          base=Path("results/review-prep")
+          r=json.loads((base/"pilot-diagnostics.json").read_text())
+          assert r["all_attempted"]==720 and r["valid_choices"]==719
+          assert r["override_total"]==3
+          arm=r["primary_parity_operator_N"]
+          assert arm["priority_valid_Q_overrides"]==0
+          assert arm["neutral_valid_Q_overrides"]==0
+          assert arm["analyzable_pairs"]==60
+          ratings=list(csv.DictReader((base/"human-review"/"blank-reviewer-ratings.csv").open()))
+          assert len(ratings)==120
+          assert all(not row["actual_reviewer_id"] and not row["overall_decision"] for row in ratings)
+          lines=[json.loads(x) for x in (base/"pilot-diagnostic-variants.jsonl").read_text().splitlines()]
+          assert len(lines)==432
+          assert len({(x["trial_id"],x["style"]) for x in lines})==432
+          print("Verified actual pilot estimates, no prefilled reviews, and 432 offline-only diagnostic stimuli.")
+          PY
+      - name: Archive reproducible research-preparation materials
+        uses: actions/upload-artifact@v4
+        with:
+          name: science-review-packet-${{ github.run_id }}
+          path: results/review-prep/
+          retention-days: 90
+          if-no-files-found: error
