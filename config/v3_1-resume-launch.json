@@ -1,0 +1,11 @@
+{
+  "frozen_protocol": "v3.1-2026-10-11-single-shot",
+  "source_run_id": 38078421238,
+  "source_artifact_id": 11679079551,
+  "valid_source_responses_to_reuse": 246,
+  "remaining_calibration_to_collect": 618,
+  "main_if_gates_pass": 5040,
+  "maximum_incremental_v3_1_usd": 5.7,
+  "run_attempts": 1,
+  "do_not_retry_valid_responses": true
+}
