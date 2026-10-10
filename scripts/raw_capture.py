@@ -56,8 +56,8 @@ def unresolved_trial(model,trial,payload,reason,response=None,status="provider_e
         "model_id":model,"provider_route":None,
         "timestamp_utc":datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "request_sha256":trial["request_sha256"],
-        "settings_json":json.dumps({k:v for k,v in payload.items() if k!="messages"},
-                                   sort_keys=True),
+        "settings_json":None if payload is None else json.dumps(
+            {k:v for k,v in payload.items() if k!="messages"},sort_keys=True),
         "attempt_status":status,"raw_response":raw if isinstance(raw,str) else None,
         "input_tokens":tokens(usage.get("prompt_tokens")),
         "output_tokens":tokens(usage.get("completion_tokens")),
