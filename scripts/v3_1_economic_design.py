@@ -443,11 +443,20 @@ def independent_review_sheet(phase: str):
         p = PROFILES[f["mechanism"]]
         at = effort_levels(p)["below_break_even"]
         q,n,core,risk,time = actions_and_blocks(f,p,at,"A","B")
+        time_first = render(f,"below_break_even","A","Q_N",
+                            "time_first",DELEGATED,phase)
+        risk_first = render(f,"below_break_even","A","Q_N",
+                            "risk_first",DELEGATED,phase)
+        orientation = int(hashlib.sha256(
+            ("v3.1-blind-order:" + f["family_id"]).encode("utf-8")
+        ).hexdigest(),16)%2
+        x,y = (risk_first,time_first) if orientation else (time_first,risk_first)
         for slot in (1,2):
             forms.append({
                 "family_id":f["family_id"],"domain":f["domain"],
                 "mechanism":f["mechanism"],"review_slot":slot,
                 "artifact":f["task_object"],"source_title":f["source_title"],
+                "prompt_X_exact":x["user_message"],"prompt_Y_exact":y["user_message"],
                 "canonical_option_Q":q,"canonical_option_N":n,
                 "common_action_contract":core,
                 "risk_facts":risk,"time_facts":time,
