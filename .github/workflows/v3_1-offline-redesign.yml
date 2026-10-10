@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/v3_1_economic_design.py'
+      - 'scripts/v3_1_final_readiness.py'
       - 'data/v3_1/context_inventory.jsonl'
       - 'tests/test_v3_1_economic_design.py'
       - 'docs/39-v3_1-surgical-economic-protocol.md'
@@ -44,6 +45,8 @@ jobs:
               assert r['signed_human_reviews']==0 and r['authorized_paid_calls']==0
           print('All V3.1 offline checks pass; zero provider calls.')
           PY
+      - name: Audit all pre-main gates and public live model prices (read only)
+        run: python scripts/v3_1_final_readiness.py --public-catalog --out docs/42-v3_1-final-readiness.json
       - name: Publish verified offline audit and two sample prompts (no model calls)
         run: |
           python - <<'PY'
@@ -76,7 +79,7 @@ jobs:
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/40-v3_1-offline-ci-audit.json docs/41-v3_1-example-model-prompts.md
+          git add docs/40-v3_1-offline-ci-audit.json docs/41-v3_1-example-model-prompts.md docs/42-v3_1-final-readiness.json
           git commit -m 'Archive passing V3.1 offline unit tests, manifest counts and model-facing examples' || true
           git fetch origin main
           git rebase origin/main
