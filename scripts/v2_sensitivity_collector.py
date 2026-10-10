@@ -72,6 +72,8 @@ def classify(response,model,t):
             meta["status"]="upstream_error"
         elif response.get("model")!=model:
             meta["status"]="model_identity_missing_or_mismatched"
+        elif meta["cost_usd"] is None:
+            meta["status"]="unknown_billing"
         else:
             options=response.get("choices")
             if isinstance(options,list) and options and isinstance(options[0],dict):
