@@ -1,0 +1,9 @@
+{
+  "protocol_id": "v3.3-three-model-full-main-2026-10-11",
+  "models": 3,
+  "expected_final_cells": 5040,
+  "prior_valid_reused": 1046,
+  "new_requests": 3994,
+  "new_spending_cap_usd": 4,
+  "single_live_attempt": true
+}
