@@ -16,6 +16,8 @@ MODELS=("anthropic/claude-haiku-4.5","meta-llama/llama-3.3-70b-instruct")
 STOP=threading.Event()
 LOCK=threading.RLock()
 TOKEN=None
+EARLY_GUARD_START_ATTEMPTS=0
+EARLY_GUARD_START_INVALID=0
 STATE={"known_usd":0.0,"unknown_hold_usd":0.0,"inflight":{},"attempts":0,
        "valid":0,"invalid":0,"stop_reason":None}
 API="https://openrouter.ai/api/v1"
@@ -210,7 +212,8 @@ def collect_one(model,row,prices,cfg):
         STATE["valid"]+=int(valid)
         STATE["invalid"]+=int(not valid)
         # Fail closed for large-scale systemic 4xx/model incompatibility.
-        if STATE["attempts"]<=120 and STATE["invalid"]>=10:
+        if (STATE["attempts"]-EARLY_GUARD_START_ATTEMPTS<=120 and
+            STATE["invalid"]-EARLY_GUARD_START_INVALID>=10):
             STOP.set();STATE["stop_reason"]="INITIAL_PROVIDER_OR_FORMAT_FAILURES"
         if STATE["known_usd"]+STATE["unknown_hold_usd"]+sum(STATE["inflight"].values())>=budget_limit(cfg):
             STOP.set();STATE["stop_reason"]="AGGREGATE_AFTER_RESPONSE_CAP"
