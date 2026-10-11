@@ -1,0 +1,67 @@
+name: V4.1 Four Neutral Model Tool Preflight (Once)
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v4_1-four-neutral-probes-launch.json
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: v4-1-four-neutral-probes-once
+  cancel-in-progress: false
+jobs:
+  one-neutral-call-per-model:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.run_attempt == 1 && contains(github.event.head_commit.message, 'AUTHORIZE_V4_1_FOUR_NEUTRAL_ONE_CALL_PREFLIGHT')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check one-shot authorization and script syntax without making requests
+        run: |
+          python -m py_compile scripts/v4_1_four_neutral_one_call_probes.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('config/v4_1-four-neutral-probes-launch.json')
+          j=json.loads(p.read_text())
+          assert j=={
+            "protocol":"v4.1-neutral-technical-only",
+            "models":["openai/gpt-5.4-mini","google/gemini-3.5-flash-lite","anthropic/claude-haiku-4.5","deepseek/deepseek-v4.1-flash"],
+            "exact_paid_requests":4,
+            "incremental_spend_limit_usd":0.15,
+            "no_retries":True,"no_main_study":True}
+          assert not Path('docs/56-v4_1-four-model-one-call-preflight.json').exists()
+          PY
+      - name: Invoke each of four endpoints exactly once, neutral tool schema
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v4_1_four_neutral_one_call_probes.py
+      - name: Archive neutral probe receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4_1-four-neutral-one-call-${{ github.run_id }}
+          path: |
+            docs/56-v4_1-four-model-one-call-preflight.json
+            results/private/v4_1-four-one-call-preflight/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Commit probe summary without retrying any call
+        if: always()
+        run: |
+          if [ -f docs/56-v4_1-four-model-one-call-preflight.json ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add docs/56-v4_1-four-model-one-call-preflight.json
+            git commit -m 'Archive four bounded neutral model tool-call observations' || true
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
