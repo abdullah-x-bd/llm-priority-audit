@@ -1,0 +1,96 @@
+name: V3.4 Recover Only Unattempted Haiku and Llama Trial Cells
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v3_4-recovery-launch.json
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: v3-4-resume-unattempted-once
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.run_attempt == 1 && contains(github.event.head_commit.message, 'AUTHORIZE_V3_4_RESUME_ONLY_3267_UNSENT')
+    runs-on: ubuntu-latest
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reject duplicate paid resumptions or changes to frozen launch authorization
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          from pathlib import Path
+          a=json.loads(Path('config/v3_4-recovery-launch.json').read_text())
+          assert a=={
+            'protocol_id':'v3.4-five-model-main-expansion-2026-10-11',
+            'source_run_id':38115946130,
+            'source_artifact_id':11693023771,
+            'old_attempts_to_preserve':93,
+            'unattempted_to_collect':3267,
+            'haiku_uses_strict_json_schema':True,
+            'total_expansion_cap_usd':1.70,
+            'once_only':True
+          }
+          uri='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(uri,headers={
+            'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+            'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=30) as h:
+            artifacts=json.load(h)['artifacts']
+          if any(x.get('name','').startswith('v3_4-haiku-llama-resume-') for x in artifacts):
+            raise SystemExit('NO_SECOND_RECOVERY_AFTER_EXISTING_ARCHIVE')
+          print('Only unattempted original Haiku/Llama trials are authorized')
+          PY
+      - name: Import immutable 93 previous requests including all 10 paid truncations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p results/private/v3_4-original-attempt
+          gh run download 38115946130 --repo abdullah-x-bd/llm-priority-audit --name v3_4-haiku-llama-38115946130 --dir results/private/v3_4-original-attempt
+      - name: Check original 93 trial hashes, schema parser and 3267 exact pending calls with no model calls
+        run: |
+          python -m py_compile scripts/v3_4_collect_additional_models.py scripts/v3_4_resume_unattempted.py scripts/v3_4_analyze_five_models.py
+          python scripts/v3_4_resume_unattempted.py --mode check
+          python scripts/v3_4_analyze_five_models.py --mode check
+      - name: Resume Haiku with strict output format and unchanged Llama only for unsent cells
+        id: collect
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v3_4_resume_unattempted.py --mode run
+      - name: Archive every original and new model envelope, cost, invalid, and request
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3_4-haiku-llama-resume-${{ github.run_id }}
+          path: |
+            results/private/v3_4-original-attempt/
+            results/private/v3_4-resumed-collection/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Merge 5040 original three-model outcomes and 3360 added model cells
+        if: always()
+        run: python scripts/v3_4_analyze_five_models.py --mode analyze
+      - name: Archive entire 8400-cell five-model dataset and disclosure
+        if: always()
+        run: |
+          if [ -f docs/53-v3_4-five-model-results.md ] && [ -f docs/54-v3_4-five-model-analysis.json ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add docs/53-v3_4-five-model-results.md docs/54-v3_4-five-model-analysis.json results/public/v3_4-all-8400-five-model-cells.jsonl
+            git commit -m 'Archive complete expanded five-model data including all Haiku truncated calls and missingness' || true
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          else
+            echo 'No result could be compiled; full raw receipts preserved as workflow artifact'
+          fi
