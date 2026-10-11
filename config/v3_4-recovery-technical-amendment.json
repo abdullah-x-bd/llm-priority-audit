@@ -1,0 +1,42 @@
+{
+  "protocol_id": "v3.4-five-model-main-expansion-2026-10-11",
+  "amendment": "TECHNICAL_REPAIR_HAIKU_NATIVE_STRUCTURED_OUTPUT_AND_RESUME_ONLY_NOT_ATTEMPTED_TRIAL_IDS",
+  "original_freeze": "config/v3_4-five-model-expansion-freeze.json",
+  "source_run_id": 38115946130,
+  "source_artifact_id": 11693023771,
+  "archived_previous_attempts": 93,
+  "archived_previous_valid": 83,
+  "archived_previous_invalid": 10,
+  "remaining_unique_calls": 3267,
+  "previous_recorded_charge_usd": 0.02391994,
+  "previous_unknown_hold_usd": 0,
+  "corrected_haiku_response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "choice",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "choice": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B"
+            ]
+          }
+        },
+        "required": [
+          "choice"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "remaining_study_parameters_unchanged": true,
+  "source_prompts_unchanged": true,
+  "do_not_retry_previously_attempted_cells": true,
+  "original_project_budget_ceiling_usd": 8,
+  "incremental_expansion_total_ceiling_usd": 1.7,
+  "publish_all_valid_invalid_and_unattempted": true
+}
