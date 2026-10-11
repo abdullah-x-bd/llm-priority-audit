@@ -1,0 +1,10 @@
+{
+  "protocol_id": "v3.4-five-model-main-expansion-2026-10-11",
+  "source_run_id": 38115946130,
+  "source_artifact_id": 11693023771,
+  "old_attempts_to_preserve": 93,
+  "unattempted_to_collect": 3267,
+  "haiku_uses_strict_json_schema": true,
+  "total_expansion_cap_usd": 1.7,
+  "once_only": true
+}
