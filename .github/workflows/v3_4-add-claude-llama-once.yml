@@ -1,0 +1,83 @@
+name: V3.4 Add Anthropic and Llama To 8400-Cell Full Experiment
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v3_4-five-model-launch.json
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: v3-4-two-model-paid-run-exactly-once
+  cancel-in-progress: false
+jobs:
+  run:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.run_attempt == 1 && contains(github.event.head_commit.message, 'AUTHORIZE_V3_4_ADD_HAIKU_LLAMA_ONCE')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check unique authorization, exactly 3360 outstanding model-trial pairs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          from pathlib import Path
+          r=json.loads(Path('config/v3_4-five-model-launch.json').read_text())
+          assert r=={
+              'protocol_id':'v3.4-five-model-main-expansion-2026-10-11',
+              'original_three_model_run_id':38114961773,
+              'models_to_add':['anthropic/claude-haiku-4.5','meta-llama/llama-3.3-70b-instruct'],
+              'existing_cells_to_preserve':5040,
+              'new_calls':3360,
+              'new_usd_cap':1.70,
+              'one_shot':True
+          }
+          uri='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(uri,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+                                                   'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=35) as z: objs=json.load(z)['artifacts']
+          if any(x.get('name','').startswith('v3_4-haiku-llama-') for x in objs):
+              raise SystemExit('STOP_PREVIOUS_V3_4_PAID_ARTIFACT_ALREADY_EXISTS')
+          print('Exact no-duplicate two-model expansion authorization confirmed.')
+          PY
+          python -m py_compile scripts/v3_4_collect_additional_models.py scripts/v3_4_analyze_five_models.py
+          python scripts/v3_4_collect_additional_models.py --mode check
+          python scripts/v3_4_analyze_five_models.py --mode check
+      - name: Make missing 3360 Anthropic Haiku and Llama calls under original $8 overall budget
+        id: collect
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v3_4_collect_additional_models.py --mode collect
+      - name: Save all raw requests and model responses and billing observations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3_4-haiku-llama-${{ github.run_id }}
+          path: results/private/v3_4-added-models/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Analyze all 8400 original and added cells without dropping invalids
+        if: always()
+        run: python scripts/v3_4_analyze_five_models.py --mode analyze
+      - name: Permanently publish complete five-model experiment
+        if: always()
+        run: |
+          if [ -f docs/53-v3_4-five-model-results.md ] && [ -f docs/54-v3_4-five-model-analysis.json ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add docs/53-v3_4-five-model-results.md docs/54-v3_4-five-model-analysis.json results/public/v3_4-all-8400-five-model-cells.jsonl
+            git commit -m 'Publish complete five-model 8400 cell exploratory study with full null and missingness disclosure' || true
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          else
+            echo 'No synthetic result; all available raw data preserved in artifact.'
+          fi
