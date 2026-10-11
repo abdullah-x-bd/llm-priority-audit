@@ -11,7 +11,7 @@ MODELS=[
  ("anthropic/claude-haiku-4.5","Azure"),
  ("deepseek/deepseek-v4.1-flash","Wafer")]
 ROOT=pathlib.Path(".")
-LAUNCH=ROOT/"config/v4_1-pinned-full-format-neutral-launch.json"
+LAUNCH=ROOT/"config/v4_1-pinned-full-format-neutral-launch-v2.json"
 OUT=ROOT/"docs/58-v4_1-pinned-full-format-preflight.json"
 CANDIDATE=ROOT/"config/v4_1-pinned-provider-candidates.json"
 RECEIPTS=ROOT/"results/private/v4_1-pinned-full-format"
@@ -60,17 +60,33 @@ for model,wanted in MODELS:
         "catalog_pricing":(catalog.get(model) or {}).get("pricing"),
         "catalog_supported_parameters":(catalog.get(model) or {}).get("supported_parameters"),
         "catalog_reasoning":(catalog.get(model) or {}).get("reasoning")}
-    if len(candidates)!=1:
-        metadata[model]["selection_error"]="provider name not unique or not returned"
+    if not candidates:
+        metadata[model]["selection_error"]="provider name not found"
         continue
-    e=candidates[0];slug=e.get("provider_slug");pr=e.get("pricing") or {}
+    # OpenRouter currently omits provider_slug in model endpoint JSON.
+    # Exact provider names and target rates are frozen here from the observed
+    # four successful short probes and the live metadata, not guessed at runtime.
+    explicit={"openai/gpt-5.4-mini":("azure",0.75,4.50),
+      "google/gemini-3.5-flash-lite":("google-ai-studio",0.30,2.50),
+      "anthropic/claude-haiku-4.5":("azure",1.00,5.00),
+      "deepseek/deepseek-v4.1-flash":("wafer",0.06,1.60)}
+    slug,target_in,target_out=explicit[model]
     def parse_pricing(v):
         try:return float(v)
         except (ValueError,TypeError):return None
-    rin,rout=parse_pricing(pr.get("prompt")),parse_pricing(pr.get("completion"))
-    if not slug or not rin or not rout or rin<0 or rout<0:
-        metadata[model]["selection_error"]="missing exact provider slug or pricing"
+    selected=[]
+    for c in candidates:
+        cpr=c.get("pricing") or {}
+        a,b=parse_pricing(cpr.get("prompt")),parse_pricing(cpr.get("completion"))
+        if a is not None and b is not None and abs(a*1e6-target_in)<0.00001 and abs(b*1e6-target_out)<0.00001:
+            selected.append(c)
+    if len(selected)!=1:
+        metadata[model]["selection_error"]="Exact named provider/price tier not unique"
         continue
+    e=selected[0];pr=e.get("pricing") or {}
+    rin,rout=parse_pricing(pr.get("prompt")),parse_pricing(pr.get("completion"))
+    metadata[model]["verified_target_slug"]=slug
+    metadata[model]["verified_target_tier_usd_per_million"]={"prompt":target_in,"completion":target_out}
     reason=(catalog.get(model) or {}).get("reasoning") or {}
     mandatory=bool(reason.get("mandatory")) if isinstance(reason,dict) else False
     # Disabled reasoning if optional, minimal effort if mandatory; explicit and recorded.
@@ -155,7 +171,8 @@ for model,wanted in MODELS:
         payload={"model":model,"messages":messages,"tools":tool,"tool_choice":"required",
             "max_tokens":256,"reasoning":route["reasoning"],"usage":{"include":True},
             "provider":{"only":[route["provider"]],"allow_fallbacks":False,
-                "require_parameters":True}}
+                "require_parameters":True,
+                "max_price":{"prompt":route["prompt_price_per_million"],"completion":route["completion_price_per_million"]}}}
         payload.update(route["sampling"])
         reserved=((len(json.dumps(payload,ensure_ascii=False).encode())+1024)
             *route["prompt_price_per_million"] +256*route["completion_price_per_million"])/1e6
