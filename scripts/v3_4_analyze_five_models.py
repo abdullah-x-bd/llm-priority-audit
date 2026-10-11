@@ -224,10 +224,12 @@ def main():
         print(json.dumps({"offline":"PASS","five_models":True,
              "cells":8400,"paired_frames":2400,"no_paid_requests":True}))
         return
-    file=DEST/"new-two-model-raw.jsonl"
+    current=(ROOT/"results"/"private"/"v3_4-resumed-collection")
+    current=current if current.exists() else DEST
+    file=current/"new-two-model-raw.jsonl"
     rows=[json.loads(x) for x in file.read_text().splitlines() if x.strip()] if file.exists() else []
     lookup=merge(manifest,rows)
-    ledger=json.loads((DEST/"ledger.json").read_text()) if (DEST/"ledger.json").exists() else {}
+    ledger=json.loads((current/"ledger.json").read_text()) if (current/"ledger.json").exists() else {}
     summary=compute(manifest,lookup)
     publish(manifest,lookup,summary,ledger)
     print(json.dumps({"attempted":summary["attempted"],"valid":summary["valid"],
