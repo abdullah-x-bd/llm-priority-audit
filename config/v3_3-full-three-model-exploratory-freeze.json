@@ -1,0 +1,100 @@
+{
+  "protocol_id": "v3.3-three-model-full-main-2026-10-11",
+  "status": "NEW_FULL_3_MODEL_EXPLORATORY_RUN_AFTER_CALIBRATION_NO_GO",
+  "selection_and_deviation_disclosure": {
+    "original_preregistered_three_model_gate_failed": true,
+    "source_calibration_run": 38080810997,
+    "passing_model": [
+      "deepseek/deepseek-v3.2"
+    ],
+    "failing_models": [
+      "openai/gpt-5.4-mini",
+      "google/gemini-3.5-flash-lite"
+    ],
+    "proceed_despite_failed_gate": true,
+    "not_original_confirmatory_study": true,
+    "no_calibration_rerun": true,
+    "no_extra_reviews": true
+  },
+  "models": [
+    "openai/gpt-5.4-mini",
+    "google/gemini-3.5-flash-lite",
+    "deepseek/deepseek-v3.2"
+  ],
+  "manifest": {
+    "generator_blob_sha": "2e19da975c26386e0d0254aca54681c1bfcefe19",
+    "inventory_blob_sha": "4d4333a277f1400d721b830a154060d32effd1e2",
+    "main_manifest_sha256": "ecc90a1e8a3310c498f715297cace1f1c5d2fab2fee9036afd944e32512c6728",
+    "trials_per_model": 1680,
+    "total_three_model_trials": 5040,
+    "domains": [
+      "continuation",
+      "reversibility",
+      "verification"
+    ],
+    "mechanisms": 15,
+    "contexts": 60
+  },
+  "prior_data_reuse": {
+    "source_run": 38084178332,
+    "artifact_id": 11681742638,
+    "model": "deepseek/deepseek-v3.2",
+    "expected_valid_record_count": 1046,
+    "expected_known_charges_usd": 0.19167174,
+    "verified_full_request_hash_per_trial": true,
+    "retain_original_raw_envelopes": true,
+    "never_repurchase_recorded_valid_trials": true
+  },
+  "remaining_to_buy": {
+    "openai": 1680,
+    "gemini": 1680,
+    "deepseek": 634,
+    "total": 3994
+  },
+  "methodology": {
+    "unit": "single independent stateless choice response to exact frozen prompt",
+    "max_tokens_openai": 96,
+    "max_tokens_gemini": 256,
+    "max_tokens_deepseek": 96,
+    "reasoning_openai": false,
+    "reasoning_gemini": "provider managed; require JSON schema",
+    "reasoning_deepseek": false,
+    "temperature_for_models_that_support_it": 0,
+    "parser": "A/B exact; Gemini uses strict choice JSON object",
+    "no_retries": true,
+    "provider_fallbacks": false,
+    "record_errors_missing_nulls_and_outliers": true,
+    "do_not_edit_prompts_or_cost_levels": true,
+    "preselect_no_effect_scenario": true
+  },
+  "budget": {
+    "original_global_ceiling_usd": 8,
+    "non_v3_known_prior_usd": 1.79190464,
+    "non_v3_uncertain_reserve_usd": 0.42,
+    "v3_1_known_usd": 0.170426145,
+    "v3_1_unresolved_hold_usd": 0.2247198,
+    "v3_2_known_usd": 0.19167174,
+    "new_spending_ceiling_usd": 4,
+    "conservative_remaining_for_new_usd": 5.201278675,
+    "no_per_response_stop_on_actual_bill_above_estimate": true,
+    "aggregate_hard_stop_required": true,
+    "requests_only_if_provider_key_balance_sufficient": true
+  },
+  "analysis_before_new_calls": {
+    "cost_profile": "For each model and domain, Q share at very_low, T−2, T, T+2, very_high",
+    "economic_benchmark": "Share choosing min expected minutes at non-tie levels, as descriptive calculation not necessarily sole rationality",
+    "primary_framing": "Risk-first minus time-first Q choice in exact matched pairs at T−2/T+2 (480 pairs per model)",
+    "primary_cost_contrast": "Q(T+2)−Q(T−2), signed for each economic domain",
+    "model_comparisons": "Difference in per-domain cost-responsiveness and framing-order effect across models; report all models even if weak or null",
+    "uncertainty": "mechanism-stratified, five mechanisms/domain; exact signed-flip exploratory p with Holm for three domains/model; population claims inappropriate",
+    "missing": "Preserve all attempted/invalid requests; all unattempted identified, matched-pair worst case bounds, no replacement of choice labels or hidden omission",
+    "publication": "All 5040 outcome rows plus raw JSONL in GitHub workflow artifact; no result-dependent stopping or mid-run edits",
+    "limitations": [
+      "Original calibration failed in two models",
+      "Postcalibration exploratory rather than original confirmatory analysis",
+      "Model-specific JSON response constraint on Gemini creates format asymmetry",
+      "Only 15 authored mechanisms and fictional delegated choices",
+      "No evidence of actual model internal objectives"
+    ]
+  }
+}
