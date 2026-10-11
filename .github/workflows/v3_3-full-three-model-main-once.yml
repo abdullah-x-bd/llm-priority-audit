@@ -1,0 +1,94 @@
+name: V3.3 Full 5040 Three-Model Exploratory Experiment
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v3_3-full-launch-authorization.json
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: v3-3-full-three-model-once-no-duplicate
+  cancel-in-progress: false
+
+jobs:
+  main:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.run_attempt == 1 && contains(github.event.head_commit.message, 'AUTHORIZE_FULL_V3_3_THREE_MODEL_MAIN_ONCE')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: One-shot authorization and no prior V3.3 paid archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json,os,urllib.request
+          from pathlib import Path
+          a=json.loads(Path("config/v3_3-full-launch-authorization.json").read_text())
+          assert a=={
+            "protocol_id":"v3.3-three-model-full-main-2026-10-11",
+            "models":3,"expected_final_cells":5040,"prior_valid_reused":1046,
+            "new_requests":3994,"new_spending_cap_usd":4.0,"single_live_attempt":True
+          }
+          url='https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/actions/artifacts?per_page=100'
+          req=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+                                                    'Accept':'application/vnd.github+json'})
+          with urllib.request.urlopen(req,timeout=35) as r:
+              data=json.load(r)
+          if any(x.get('name','').startswith('v3_3-three-model-main-') for x in data.get('artifacts',[])):
+              raise SystemExit('REFUSE_DUPLICATE_FULL_V3_3_MAIN_RUN')
+          print("New V3.3 three-model exploratory launch authorized once")
+          PY
+      - name: Restore original DeepSeek 1046 raw envelopes and accounting
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p results/private/v3_3-original-deepseek
+          gh run download 38084178332 --repo abdullah-x-bd/llm-priority-audit --name v3_2-deepseek-main-38084178332 --dir results/private/v3_3-original-deepseek
+      - name: Lock and validate full manifest and statistical analysis with no API requests
+        run: |
+          python -m py_compile scripts/v3_3_full_three_model_collect.py scripts/v3_3_three_model_analyze.py
+          python -m unittest discover -s tests -p 'test_v3_1_economic_design.py' -q
+          python scripts/v3_3_full_three_model_collect.py --mode check
+          python scripts/v3_3_three_model_analyze.py --mode check
+      - name: FULL 3-model exploratory main, 3994 remaining calls, aggregate $4 cap
+        id: collect
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v3_3_full_three_model_collect.py --mode collect
+      - name: Retain raw requests, response envelopes and live billing receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3_3-three-model-main-${{ github.run_id }}
+          path: |
+            results/private/v3_3-original-deepseek/
+            results/private/v3_3-three-model-main/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Run frozen full 5040-cell analysis whether complete or partial
+        if: always()
+        run: python scripts/v3_3_three_model_analyze.py --mode analyze
+      - name: Publish all original and new outcomes, nulls and missingness permanently
+        if: always()
+        run: |
+          if [ -f docs/51-v3_3-full-three-model-results.md ] && [ -f docs/52-v3_3-full-three-model-analysis.json ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add docs/51-v3_3-full-three-model-results.md docs/52-v3_3-full-three-model-analysis.json results/public/v3_3-all-5040-cells.jsonl
+            git commit -m 'Archive complete exploratory 5040 three-model economic choices and all missingness' || true
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          else
+            echo 'Results unavailable; retained raw requests in run artifact instead of fabricating summary'
+          fi
