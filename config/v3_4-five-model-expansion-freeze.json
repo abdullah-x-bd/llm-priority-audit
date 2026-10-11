@@ -1,0 +1,67 @@
+{
+  "protocol_id": "v3.4-five-model-main-expansion-2026-10-11",
+  "type": "PROSPECTIVE_TWO_MODEL_EXTENSION_OF_COMPLETED_THREE_MODEL_EXPLORATORY_MAIN",
+  "original_five_model_roster": [
+    "openai/gpt-5.4-mini",
+    "anthropic/claude-haiku-4.5",
+    "google/gemini-3.5-flash-lite",
+    "deepseek/deepseek-v3.2",
+    "meta-llama/llama-3.3-70b-instruct"
+  ],
+  "new_models": [
+    "anthropic/claude-haiku-4.5",
+    "meta-llama/llama-3.3-70b-instruct"
+  ],
+  "frozen_source": {
+    "generator_blob_sha": "2e19da975c26386e0d0254aca54681c1bfcefe19",
+    "inventory_blob_sha": "4d4333a277f1400d721b830a154060d32effd1e2",
+    "full_main_manifest_sha256": "ecc90a1e8a3310c498f715297cace1f1c5d2fab2fee9036afd944e32512c6728",
+    "unique_prompts_per_model": 1680,
+    "new_requests": 3360,
+    "full_design_cells": 8400
+  },
+  "provenance": {
+    "source_three_model_run_id": 38114961773,
+    "source_three_model_artifact_id": 11692694096,
+    "already_attempted_three_model_cells": 5040,
+    "valid_three_model_cells": 4862,
+    "invalid_three_model_cells": 178,
+    "source_three_model_model_count": 3,
+    "no_repurchase_old_calls": true,
+    "failed_three_model_calibration_gate_disclosed": true,
+    "interpretation": "EXPLORATORY_AFTER_FAILED_CONFIRMATORY_CALIBRATION"
+  },
+  "sampling": {
+    "one_stateless_prompt_per_trial": true,
+    "max_completion_tokens": 96,
+    "temperature": 0,
+    "provider_fallbacks": false,
+    "exact_one_letter_choice_A_or_B": true,
+    "no_paid_retries": true,
+    "model_identity_must_match": true,
+    "all_frozen_variants": true
+  },
+  "budget": {
+    "project_hard_cap_usd": 8,
+    "prior_known_non_v3_usd": 1.79190464,
+    "prior_uncertain_hold_usd": 0.42,
+    "v3_1_known_usd": 0.170426145,
+    "v3_1_uncertain_hold_usd": 0.2247198,
+    "v3_2_known_usd": 0.19167174,
+    "v3_3_known_usd": 0.778618666,
+    "v3_3_uncertain_hold_usd": 2.67,
+    "additional_spending_hard_cap_usd": 1.7,
+    "reserve_for_inflight_usd": 0.025,
+    "provider_live_balance_required": true,
+    "allow_response_to_exceed_estimated_cost": true,
+    "stop_on_project_aggregate_only": true
+  },
+  "analysis": "Do not select on outcomes; report 5-model cost-response distributions, all 5 model-by-domain data and paired presentation effects, calibration failures, missingness and raw response envelopes. No additional confirmatory study implied.",
+  "limitations": [
+    "Original 3-model calibration failed two models",
+    "Additional Anthropic and Llama results were collected after prior three-model results had been observed",
+    "Provider-specific format and routing can differ",
+    "Only 60 hand-authored fictional families",
+    "Not evidence of actual internal model objectives"
+  ]
+}
