@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "source_run": 38151578205,
+  "study_manifest_sha256": "c9bf735fc67a7a6e5ac6c86e9c5d9889bc7eab8af04389eef7bf71d513af39d5",
+  "main_authorized": false,
+  "main_calls_attempted": 0,
+  "max_tokens": 256,
+  "tool_choice": "required",
+  "allow_fallbacks": false,
+  "require_parameters": true,
+  "technical_paid_cost_usd": 0.00652937,
+  "routes": {
+    "openai/gpt-5.4-mini": {
+      "provider_slug": "azure",
+      "provider_name": "Azure",
+      "prompt_price_per_million": 0.75,
+      "completion_price_per_million": 4.5,
+      "reasoning": {
+        "enabled": false
+      },
+      "sampling": {},
+      "technical_A": true,
+      "technical_B": true,
+      "prompt_tokens_neutral_full_format": 725,
+      "completion_tokens_neutral_full_format": 19
+    },
+    "google/gemini-3.5-flash-lite": {
+      "provider_slug": "google-ai-studio",
+      "provider_name": "Google AI Studio",
+      "prompt_price_per_million": 0.3,
+      "completion_price_per_million": 2.5,
+      "reasoning": {
+        "effort": "minimal"
+      },
+      "sampling": {},
+      "technical_A": true,
+      "technical_B": true,
+      "prompt_tokens_neutral_full_format": 773,
+      "completion_tokens_neutral_full_format": 18
+    },
+    "anthropic/claude-haiku-4.5": {
+      "provider_slug": "azure",
+      "provider_name": "Azure",
+      "prompt_price_per_million": 1,
+      "completion_price_per_million": 5,
+      "reasoning": {
+        "enabled": false
+      },
+      "sampling": {},
+      "technical_A": true,
+      "technical_B": true,
+      "prompt_tokens_neutral_full_format": 1416,
+      "completion_tokens_neutral_full_format": 40
+    },
+    "deepseek/deepseek-v4.1-flash": {
+      "provider_slug": "wafer",
+      "provider_name": "Wafer",
+      "prompt_price_per_million": 0.06,
+      "completion_price_per_million": 1.6,
+      "reasoning": {
+        "enabled": false
+      },
+      "sampling": {},
+      "technical_A": true,
+      "technical_B": true,
+      "prompt_tokens_neutral_full_format": 958,
+      "completion_tokens_neutral_full_format": 21
+    }
+  },
+  "notes": "Use provider.only=[provider_slug] and exact per-million-token max_price. Prices are from authenticated live endpoint metadata and tested routes. No real account-credit query completed; /key limit_remaining is not account balance."
+}
