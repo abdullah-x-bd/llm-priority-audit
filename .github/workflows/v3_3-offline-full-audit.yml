@@ -1,0 +1,33 @@
+name: V3.3 Full Three-Model Offline Integrity and Original-Data Audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/v3_3_full_three_model_collect.py'
+      - 'scripts/v3_3_three_model_analyze.py'
+      - 'config/v3_3-full-three-model-exploratory-freeze.json'
+      - '.github/workflows/v3_3-offline-full-audit.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Retrieve original main data without paying for duplicate trials
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p results/private/v3_3-original-deepseek
+          gh run download 38084178332 --repo abdullah-x-bd/llm-priority-audit --name v3_2-deepseek-main-38084178332 --dir results/private/v3_3-original-deepseek
+      - name: Verify 1046 old responses and 3994 new cells with zero paid calls
+        run: |
+          python -m py_compile scripts/v3_3_full_three_model_collect.py scripts/v3_3_three_model_analyze.py
+          python -m unittest discover -s tests -p 'test_v3_1_economic_design.py' -q
+          python scripts/v3_3_full_three_model_collect.py --mode check
+          python scripts/v3_3_three_model_analyze.py --mode check
