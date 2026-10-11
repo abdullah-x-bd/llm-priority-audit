@@ -119,6 +119,8 @@ def run():
     # Only count invalidity on new corrected requests in the new recovery stage.
     previous_attempts=93
     previous_invalid=10
+    original.EARLY_GUARD_START_ATTEMPTS=93
+    original.EARLY_GUARD_START_INVALID=10
     source_collect_one=original.collect_one
     original.payload=schema_payload
     original.parse=schema_parse
