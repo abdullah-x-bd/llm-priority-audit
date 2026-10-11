@@ -1,0 +1,67 @@
+name: V4.1 Pinned Providers Full-Format Neutral Preflight (Once)
+on:
+  push:
+    branches: [main]
+    paths:
+      - config/v4_1-pinned-full-format-neutral-launch.json
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: v4-1-pinned-full-format-neutral-once
+  cancel-in-progress: false
+jobs:
+  verify-providers:
+    if: github.repository == 'abdullah-x-bd/llm-priority-audit' && github.run_attempt == 1 && contains(github.event.head_commit.message, 'AUTHORIZE_V4_1_PINNED_FULL_FORMAT_8_NEUTRAL_CALLS_ONLY')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate exact neutral-only launch before payment
+        run: |
+          python -m py_compile scripts/v4_1_pinned_full_format_probe.py
+          python - <<'PY'
+          import json,pathlib
+          j=json.loads(pathlib.Path('config/v4_1-pinned-full-format-neutral-launch.json').read_text())
+          assert j=={
+            'protocol':'v4.1-pinned-full-format-neutral-2026-10-11',
+            'models':['openai/gpt-5.4-mini','google/gemini-3.5-flash-lite','anthropic/claude-haiku-4.5','deepseek/deepseek-v4.1-flash'],
+            'probes_per_model':2,'total_request_limit':8,
+            'incremental_usd_limit':0.10,'max_tokens':256,
+            'main_experiment_authorized':False,'no_retries':True}
+          for p in ['docs/58-v4_1-pinned-full-format-preflight.json','config/v4_1-pinned-provider-candidates.json']:
+            assert not pathlib.Path(p).exists(), 'One-shot preflight already completed'
+          PY
+      - name: Pin providers from live endpoint metadata and test 8 neutral full-length requests
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: python -u scripts/v4_1_pinned_full_format_probe.py
+      - name: Archive all receipts with no repeat calls
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v4_1-pinned-full-format-neutral-${{ github.run_id }}
+          path: |
+            results/private/v4_1-pinned-full-format/
+            docs/58-v4_1-pinned-full-format-preflight.json
+            config/v4_1-pinned-provider-candidates.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Publish technical metadata and neutral cost report (never main data)
+        if: always()
+        run: |
+          if [ -f docs/58-v4_1-pinned-full-format-preflight.json ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add docs/58-v4_1-pinned-full-format-preflight.json config/v4_1-pinned-provider-candidates.json
+            git commit -m 'Archive route-pinned eight-call neutral full-format preflight and price observations' || true
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
