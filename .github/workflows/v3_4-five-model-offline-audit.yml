@@ -1,0 +1,25 @@
+name: V3.4 Five-Model Expansion Offline Integrity
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'config/v3_4-five-model-expansion-freeze.json'
+      - 'scripts/v3_4_collect_additional_models.py'
+      - 'scripts/v3_4_analyze_five_models.py'
+      - '.github/workflows/v3_4-five-model-offline-audit.yml'
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check full five-model frozen prompts, original results and analysis with no model calls
+        run: |
+          python -m py_compile scripts/v3_4_collect_additional_models.py scripts/v3_4_analyze_five_models.py
+          python scripts/v3_4_collect_additional_models.py --mode check
+          python scripts/v3_4_analyze_five_models.py --mode check
