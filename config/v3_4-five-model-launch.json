@@ -1,0 +1,12 @@
+{
+  "protocol_id": "v3.4-five-model-main-expansion-2026-10-11",
+  "original_three_model_run_id": 38114961773,
+  "models_to_add": [
+    "anthropic/claude-haiku-4.5",
+    "meta-llama/llama-3.3-70b-instruct"
+  ],
+  "existing_cells_to_preserve": 5040,
+  "new_calls": 3360,
+  "new_usd_cap": 1.7,
+  "one_shot": true
+}
